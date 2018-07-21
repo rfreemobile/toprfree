@@ -6,7 +6,8 @@ using std::cerr;
 using std::cin;
 using std::endl;
 
-int main() {
+int main(const int argc, const char * const * argv) {
 	cProgram program;
+	program.options(argc,argv);
 	program.run();
 }

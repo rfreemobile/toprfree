@@ -9,9 +9,11 @@ class cProgram_pimpl_delete { public: void operator()(cProgram_pimpl *p) const; 
 
 class cProgram {
 	public:
+		cProgram();
 		virtual ~cProgram();
 
-		void run();
+		virtual void options(const int argc, const char * const * argv);
+		virtual void run();
 
 	private:
 		unique_ptr<cProgram_pimpl,cProgram_pimpl_delete> m_pimpl;
