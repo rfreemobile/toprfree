@@ -4,11 +4,12 @@
 
 #include "sensor/interrupts.hpp"
 
-void cProgram_pimpl_delete::operator()(cProgram_pimpl *p) const { delete p; }
 
 class cProgram_pimpl {
 	public:
 };
+
+void cProgram_pimpl_delete::operator()(cProgram_pimpl *p) const { delete p; }
 
 
 void cProgram::run() {
