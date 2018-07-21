@@ -155,159 +155,14 @@ else()
 	add_definitions(-DUSE_BOOST_MULTIPRECISION=0)
 endif()
 
-########################### SODIUM ###########################
-if (BUILD_STATIC_TUNSERVER)
-	set (sodium_USE_STATIC_LIBS ON)
-endif()
-find_package(Sodium)
-#link_directories(/home/ubuntu/build/libsodium/libsodium-osx/lib/) # for gitian build
-
-if (NOT SODIUM_FOUND)
-	message("\nSODIUM NOT FOUND!")
-	if (MSVC)
-		message(STATUS "\nNote (MSVC): \nPlease download and install package (or later):")
-		message(STATUS "    https://download.libsodium.org/libsodium/releases/ libsodium-1.0.11-msvc.zip  \n")
-		message(STATUS "Add following argument for cmake (install to location):")
-		message(STATUS "    \"-DSODIUM_ROOT_DIR=C:/local/libsodium-1.0.11-msvc/\"\n\n")
-	endif()
-	message(FATAL_ERROR "SODIUM REQUIRED AND NOT FOUND, NOW STOPPING")
-endif()
-
-include_directories(SYSTEM ${SODIUM_INCLUDE_DIR})
-
-if(BUILD_STATIC_TUNSERVER)
-	set(PTHREAD_LIB "pthread")
-	set(SODIUM_LIB "${SODIUM_LIBRARY}")
-elseif(CYGWIN)
-	set(SODIUM_LIB "sodium")
-elseif(MSVC OR MINGW)
-	set(SODIUM_LIB "${SODIUM_LIBRARY}")
-	set(MSVC_LIRARIES "iphlpapi")
-else()
-	set(PTHREAD_LIB "pthread")
-	set(SODIUM_LIB "sodium")
-endif()
-
-########################### CURL ###########################
-
-option(ENABLE_LIB_CURL "Enable libcurl and functions depending on it" OFF)
-
-if(ENABLE_LIB_CURL)
-	add_definitions(-DENABLE_LIB_CURL)
-	if(CURL_ROOT_DIR)
-		list( APPEND CMAKE_INCLUDE_PATH "${CURL_ROOT_DIR}/include")
-		list( APPEND CMAKE_LIBRARY_PATH "${CURL_ROOT_DIR}/lib")
-	endif()
-
-	find_package(CURL REQUIRED)
-	if (NOT CURL_FOUND)
-		if (MSVC)
-			message(STATUS "Add following argument for cmake:")
-			message(STATUS "    \"-DCURL_ROOT_DIR=path\to\curl/\"\n\n")
-		endif()
-		message(FATAL_ERROR "CURL REQUIRED AND NOT FOUND, NOW STOPPING")
-	else()
-		if(${CURL_VERSION_STRING})
-			message(STATUS "Curl version: " ${CURL_VERSION_STRING})
-		endif()
-	endif()
-	include_directories(SYSTEM ${CURL_INCLUDE_DIRS})
-	set(CURL_LIB "${CURL_LIBRARIES}")
-else()
-	remove_definitions(-DENABLE_LIB_CURL)
-	set(CURL_LIB "")
-endif()
-
-#add local gtest
-if (MSVC)
-	set(gtest_force_shared_crt ON CACHE BOOL "Enable gtest_force_shared_crt")
-endif()
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/depends/googletest ${CMAKE_CURRENT_BINARY_DIR}/googletest)
-include_directories(depends/googletest/googletest/include/)
-include_directories(depends/googletest/googlemock/include/)
-
-#add local nlohmann json
-include_directories(depends/json/src)
-
-#add local CTPL
-include_directories(depends/CTPL)
-
-#add local backward-cpp for backtrace printing
-set(HAVE_BACKWARD 0)
-if(NOT WIN32 AND NOT APPLE)
-	set(Backward_DIR ${CMAKE_SOURCE_DIR}/depends/backward-cpp)
-	find_package(Backward)
-	if(Backward_FOUND)
-		set(HAVE_BACKWARD 1)
-	endif()
-endif()
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/depends/backward-cpp)
-
-#add local local lib sodiumpp
-set (SODIUMPP_STATIC 1)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/depends/sodiumpp ${CMAKE_CURRENT_BINARY_DIR}/sodiumpp)
-include_directories(depends/sodiumpp/sodiumpp/include)
-
-########################### SIDH ###########################
-if(ENABLE_CRYPTO_SIDH AND NOT MSVC)
-	message(STATUS "Using crypto: SIDH")
-	if(NOT EXTLEVEL_IS_EXPERIMENT_DANGEROUS)
-    message( FATAL_ERROR "To use SIDH you must also enable proper EXTLEVEL for it (see the CMake file, or use defaults)" )
-	endif()
-	add_definitions(-DENABLE_CRYPTO_SIDH_CMAKE=1) # MATCH: must match also in project.hpp!
-
-	#add local lib sidh
-	#flags for SIDH.h
-	add_definitions(-D_AMD64_ -D__LINUX__) #TODO set this flags automatically
-	add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/depends/sidh)
-	include_directories(depends/sidh)
-	list(APPEND LIBS_OPTIONAL_CRYPTO "sidh")
-else()
-	add_definitions(-DENABLE_CRYPTO_SIDH_CMAKE=0) # MATCH: must match also in project.hpp!
-endif()
-
-########################### NTru ###########################
-if(ENABLE_CRYPTO_NTRU AND NOT MSVC)
-	message(STATUS "Using crypto: NTru")
-	add_definitions(-DENABLE_CRYPTO_NTRU_CMAKE=1) # MATCH: must match also in project.hpp!
-
-	set(NTRU_SIGN_DIR "depends/ntru-crypto/reference-code/C/Sign/PASS/src")
-	include_directories("${NTRU_SIGN_DIR}")
-	file(GLOB ntru-sign-files ${NTRU_SIGN_DIR}/*.c)
-	file(GLOB BENCH ${NTRU_SIGN_DIR}/bench.c)
-	list(REMOVE_ITEM ntru-sign-files ${BENCH})
-	add_library(ntrusign ${ntru-sign-files})
-	target_link_libraries(ntrusign fftw3 m)
-	#add local build of some external libs
-	link_directories( build_extra/ntru/.libs )
-	list(APPEND LIBS_OPTIONAL_CRYPTO "ntruencrypt")
-	list(APPEND LIBS_OPTIONAL_CRYPTO "ntrusign")
-
-	message(STATUS "This is one part of NTRU (the sign), and there is other part of NTRU (encr) executed in other files (e.g. in scripts)")
-  # NTRU Encrypt is in other file ---^
-else()
-	add_definitions(-DENABLE_CRYPTO_NTRU_CMAKE=0) # MATCH (name of this option) must match also in project.hpp!
-endif()
-
-# used e.g. by various crypto like ENABLE_CRYPTO_SIDH , ENABLE_CRYPTO_NTRU
-include_directories( build_extra )
-
 
 ########################### SOURCE FILES ###########################
 include_directories( src/ )
-include_directories( src-tools/netmodel/ )
 
-file(GLOB SOURCES_GROUP_CRYPTO src/crypto/*.cpp)
+file(GLOB SOURCES_GROUP_MAINPROGRAM src/* )
 
-file(GLOB SOURCES_GROUP_TUNSERVER src/* src/httpdbg/* src/utils/* src/stdplus/* src/cable/* src/cable/base/* src/cable/simulation/* src/cable/udp/*
-	src/cable/shm/cable_shm_addr.cpp *src/tuntap/base/* src/tuntap/linux/* src/tuntap/windows/* src/tuntap/macosx/* src/tuntap/fake_tun/*
-	src/test/special_behaviour/*
-)
 list(REMOVE_ITEM SOURCES_GROUP_TUNSERVER
-	${CMAKE_CURRENT_SOURCE_DIR}/src/ipserver.cpp
-	${CMAKE_CURRENT_SOURCE_DIR}/src/ipclient.cpp
-	${CMAKE_CURRENT_SOURCE_DIR}/src/style_example.cpp
-	${CMAKE_CURRENT_SOURCE_DIR}/src/g42-main.cpp)
+	${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp)
 
 if(APPLE)
 	list(APPEND SOURCES_GROUP_TUNSERVER ${CMAKE_CURRENT_SOURCE_DIR}/depends/cjdns-code/NetPlatform_darwin.c)
@@ -315,65 +170,32 @@ elseif(NOT WIN32)
 	list(APPEND SOURCES_GROUP_TUNSERVER ${CMAKE_CURRENT_SOURCE_DIR}/depends/cjdns-code/NetPlatform_linux.c)
 endif()
 
-file(GLOB SOURCES_GROUP_TOOLS_NETMODEL src-tools/netmodel/*.cpp src-tools/netmodel/*/*.cpp
-)
-
 if(WIN32 OR CYGWIN OR MINGW)
 	add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/contrib/windows-service-wrapper)
 	add_custom_target(windowsService)
 	add_dependencies(windowsService galaxyService)
 endif()
 
-option(HTTP_DEBUGGER "Build with http debuger" OFF)
-if(HTTP_DEBUGGER)
-	add_definitions(-DHTTP_DBG)
-endif()
-
-file(GLOB SOURCES_GROUP_RPC src/rpc/*.cpp)
-list(REMOVE_ITEM SOURCES_GROUP_RPC ${CMAKE_CURRENT_SOURCE_DIR}/src/rpc_sender.cpp)
-
-file(GLOB SOURCES_API_GALAXY src/apigalaxy/*)
-
 message(STATUS "Sorting sources (from GLOB) - must be sorted for Gitian to be deterministic")
-list(SORT SOURCES_GROUP_TUNSERVER)
-list(SORT SOURCES_GROUP_TOOLS_NETMODEL)
-list(SORT SOURCES_GROUP_CRYPTO)
-list(SORT SOURCES_GROUP_RPC)
-list(SORT SOURCES_API_GALAXY)
-
-include_directories(../antinet/src/antinet_sim/)
-
-
-string(STRIP "${LIBS_OPTIONAL_CRYPTO}" LIBS_OPTIONAL_CRYPTO_clean)
-message(STATUS "Libs for crypto are: (as string) '${LIBS_OPTIONAL_CRYPTO_clean}'")
-separate_arguments(LIBS_OPTIONAL_CRYPTO_clean)
-unset(LIBS_OPTIONAL_CRYPTO)
-message(STATUS "Libs for crypto are: (as list) '${LIBS_OPTIONAL_CRYPTO_clean}'")
-
-## TODO check this for gitian
-# LIBS-1 [new doc]
-
-# LIBS-2 [new doc]
+list(SORT SOURCES_GROUP_MAINPROGRAM)
 
 
 ########################### OPTIONAL LIBRARIES ###########################
 
-set(LIB_OPTIONAL_CAPNG "")
-if (UNIX AND NOT CYGWIN AND NOT APPLE)
-	set(LIB_OPTIONAL_CAPNG "cap-ng")
-endif ()
+# perhaps use CAP in future?
+
+# set(LIB_OPTIONAL_CAPNG "")
+# if (UNIX AND NOT CYGWIN AND NOT APPLE)
+# 	set(LIB_OPTIONAL_CAPNG "cap-ng")
+# endif ()
 
 ######################################################################
 ######################################################################
 ######################################################################
 
 ########################### TARGETS ###########################
-add_library(apigalaxy ${SOURCES_API_GALAXY})
 
-add_executable(tunserver.elf src/g42-main.cpp ${SOURCES_GROUP_TUNSERVER} ${SOURCES_GROUP_TOOLS_NETMODEL} ${SOURCES_GROUP_CRYPTO} ${SOURCES_GROUP_RPC})
-if (NOT MSVC) #TODO
-	cotire(tunserver.elf)
-endif()
+add_executable(toprfree src/main.cpp ${SOURCES_GROUP_MAINPROGRAM})
 
 set(LIBS_COMMON
 	${Boost_LIBRARIES} ${BOOST_LOCALE_LINK_LIB} ${BOOST_THREAD_LINK_LIB}
@@ -382,43 +204,21 @@ set(LIBS_COMMON
 	${MINGW_LIBRARIES} ${MSVC_LIRARIES} apigalaxy ${CURL_LIB}
 )
 
-target_link_libraries(tunserver.elf
+target_link_libraries(toprfree
 	${LIBS_COMMON}
 	)
-# TODO remove when confirmed that above LIBS_COMMON do work correctly instead (if no problem till max 2017-07-01)
-#	${Boost_LIBRARIES} ${BOOST_LOCALE_LINK_LIB} ${BOOST_THREAD_LINK_LIB}
-#	${PTHREAD_LIB} sodiumpp ${SODIUM_LIB} ${LIBS_OPTIONAL_CRYPTO_clean}
-#	${MINGW_LIBRARIES} ${MSVC_LIRARIES})
 
 #tests
-file(GLOB TEST_SOURCES "src/test/*.cpp")
-list(SORT TEST_SOURCES)
+# file(GLOB TEST_SOURCES "src/test/*.cpp")
+# list(SORT TEST_SOURCES)
 
-add_executable(unittests.elf ${SOURCES_GROUP_TUNSERVER} ${SOURCES_GROUP_TOOLS_NETMODEL} ${SOURCES_GROUP_CRYPTO} ${SOURCES_GROUP_RPC} ${TEST_SOURCES})
-target_compile_definitions(unittests.elf PUBLIC -DUSE_MOCK)
-target_link_libraries(unittests.elf
-	${LIBS_COMMON}
-	gtest gmock
-)
+# add_executable(unittests.elf ${SOURCES_GROUP_TUNSERVER} ${SOURCES_GROUP_TOOLS_NETMODEL} ${SOURCES_GROUP_CRYPTO} ${SOURCES_GROUP_RPC} ${TEST_SOURCES})
+#target_compile_definitions(unittests.elf PUBLIC -DUSE_MOCK)
+#target_link_libraries(unittests.elf
+#	${LIBS_COMMON}
+#	gtest gmock
+#)
 
-#	${Boost_LIBRARIES} ${BOOST_LOCALE_LINK_LIB} ${BOOST_THREAD_LINK_LIB}
-#	gtest gmock sodiumpp ${SODIUM_LIB} ${MINGW_LIBRARIES})
-#foreach (_lib ${LIBS_OPTIONAL_CRYPTO_clean})
-#	message(STATUS "ADDING LIBRARY FROM LIST: '${_lib}'")
-#	target_link_libraries(test-debug.elf ${_lib})
-#endforeach()
-
-# This will add libraries, definitions and include directories needed by backward
-# by setting each property on the target.
-add_executable(performancetests.elf src/test/performance/xint.cpp ${SOURCES_GROUP_TUNSERVER} ${SOURCES_GROUP_TOOLS_NETMODEL} ${SOURCES_GROUP_CRYPTO} ${SOURCES_GROUP_RPC})
-target_link_libraries(performancetests.elf
-	${LIBS_COMMON})
-
-if(HAVE_BACKWARD AND NOT MINGW)
-#	add_backward(tunserver)
-	add_backward(tunserver.elf)
-	add_backward(unittests.elf)
-endif()
 
 ########################### FINALIZE OPTIONS #########################
 
@@ -438,21 +238,21 @@ message(STATUS "Release with debug info flags: ${CMAKE_CXX_FLAGS_RELWITHDEBINFO}
 message(STATUS "Warn pedantic flags:           ${WARN_PEDANTIC_FLAGS}")
 
 ########################### CUSTOM TARGETS ###########################
+
 add_custom_target(Release
 		COMMAND ${CMAKE_COMMAND} -DCMAKE_BUILD_TYPE=Release ${CMAKE_SOURCE_DIR}
 		COMMAND make)
-add_custom_target(Debug
-		COMMAND ${CMAKE_COMMAND} -DCMAKE_BUILD_TYPE=Debug ${CMAKE_SOURCE_DIR}
-		COMMAND make)
+
 
 if(NOT MINGW AND NOT WIN32)
 
 	add_custom_target(run
-			COMMAND "${CMAKE_BINARY_DIR}/rundevel.sh"
-			DEPENDS ./tunserver.elf
-			DEPENDS unittests.elf
+			COMMAND "./toprfree"
+			DEPENDS ./toprfree
 			WORKING_DIRECTORY ./)
 
+
+if(false)
 	add_custom_command(
 		TARGET tunserver.elf
 		POST_BUILD
@@ -471,29 +271,6 @@ if(NOT MINGW AND NOT WIN32)
 		COMMAND cp "${CMAKE_SOURCE_DIR}/qa/run-safe/*" "${CMAKE_BINARY_DIR}/" || echo skip
 
 		WORKING_DIRECTORY ./)
+endif()
 
-	add_custom_command(
-		TARGET tunserver.elf
-		POST_BUILD
-		COMMAND "${CMAKE_SOURCE_DIR}/share/script/use-setcap" tunserver.elf || echo "Can not set rights cap on binary, ignoring."
-		COMMAND chmod a+x tunserver.elf
-		COMMAND chmod a+x nocap-tunserver.elf
-		WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
-
-	add_custom_command(
-		TARGET unittests.elf
-		POST_BUILD
-		COMMAND chmod g-wx,o-wx unittests.elf
-		COMMAND cp unittests.elf nocap-unittests.elf
-		COMMAND "${CMAKE_SOURCE_DIR}/share/script/use-setcap" unittests.elf || echo "Can not set rights cap on binary, ignoring."
-		COMMAND chmod a+x unittests.elf
-		COMMAND chmod a+x nocap-unittests.elf
-		WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
-
-	add_custom_target(
-		TARGET tunserver.elf
-		POST_BUILD
-		COMMAND "${CMAKE_SOURCE_DIR}/share/script/show-source-help.sh"
-		COMMAND "${CMAKE_SOURCE_DIR}/share/script/show-program-help.sh"
-		WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 endif()
