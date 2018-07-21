@@ -23,7 +23,7 @@ endif()
 ########################### BOOST ###########################
 ### boost - part 1 - just check version and decide does it affect our flags
 set (Boost_USE_MULTITHREADED ON)
-if (BUILD_STATIC_TUNSERVER)
+if (BUILD_STATIC_MAINPROGRAM)
 	set (Boost_USE_STATIC_RUNTIME ON)
 	set (Boost_USE_STATIC_LIBS ON)
 	set (Boost_USE_DEBUG_RUNTIME OFF)
@@ -161,20 +161,8 @@ include_directories( src/ )
 
 file(GLOB SOURCES_GROUP_MAINPROGRAM src/* )
 
-list(REMOVE_ITEM SOURCES_GROUP_TUNSERVER
+list(REMOVE_ITEM SOURCES_GROUP_MAINPROGRAM
 	${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp)
-
-if(APPLE)
-	list(APPEND SOURCES_GROUP_TUNSERVER ${CMAKE_CURRENT_SOURCE_DIR}/depends/cjdns-code/NetPlatform_darwin.c)
-elseif(NOT WIN32)
-	list(APPEND SOURCES_GROUP_TUNSERVER ${CMAKE_CURRENT_SOURCE_DIR}/depends/cjdns-code/NetPlatform_linux.c)
-endif()
-
-if(WIN32 OR CYGWIN OR MINGW)
-	add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/contrib/windows-service-wrapper)
-	add_custom_target(windowsService)
-	add_dependencies(windowsService galaxyService)
-endif()
 
 message(STATUS "Sorting sources (from GLOB) - must be sorted for Gitian to be deterministic")
 list(SORT SOURCES_GROUP_MAINPROGRAM)
@@ -199,9 +187,9 @@ add_executable(toprfree src/main.cpp ${SOURCES_GROUP_MAINPROGRAM})
 
 set(LIBS_COMMON
 	${Boost_LIBRARIES} ${BOOST_LOCALE_LINK_LIB} ${BOOST_THREAD_LINK_LIB}
-	${PTHREAD_LIB} sodiumpp ${SODIUM_LIB} ${LIBS_OPTIONAL_CRYPTO_clean}
+	${PTHREAD_LIB}
 	${LIB_OPTIONAL_CAPNG}
-	${MINGW_LIBRARIES} ${MSVC_LIRARIES} apigalaxy ${CURL_LIB}
+	${MINGW_LIBRARIES} ${MSVC_LIRARIES}
 )
 
 target_link_libraries(toprfree
@@ -212,7 +200,7 @@ target_link_libraries(toprfree
 # file(GLOB TEST_SOURCES "src/test/*.cpp")
 # list(SORT TEST_SOURCES)
 
-# add_executable(unittests.elf ${SOURCES_GROUP_TUNSERVER} ${SOURCES_GROUP_TOOLS_NETMODEL} ${SOURCES_GROUP_CRYPTO} ${SOURCES_GROUP_RPC} ${TEST_SOURCES})
+# add_executable(unittests.elf ${SOURCES_GROUP_MAINPROGRAM} ${SOURCES_GROUP_TOOLS_NETMODEL} ${SOURCES_GROUP_CRYPTO} ${SOURCES_GROUP_RPC} ${TEST_SOURCES})
 #target_compile_definitions(unittests.elf PUBLIC -DUSE_MOCK)
 #target_link_libraries(unittests.elf
 #	${LIBS_COMMON}
