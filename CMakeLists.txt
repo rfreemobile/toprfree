@@ -77,7 +77,9 @@ if(${CMAKE_CXX_COMPILER_ID} MATCHES GNU)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
 	set(WARN_PEDANTIC_FLAGS "-Wall -Wextra -pedantic -Wnoexcept -Wstrict-null-sentinel -Wlogical-op")
 	set(WARN_PEDANTIC_FLAGS "${WARN_PEDANTIC_FLAGS} -Wreturn-type")
+	set(WARN_PEDANTIC_FLAGS "${WARN_PEDANTIC_FLAGS} -Werror -Wfatal-errors")
 	set(WARN_PEDANTIC_FLAGS_FOR_C "-Wall") # mostly used by dependencies
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O1")
 	string(REPLACE "-DNDEBUG" "" CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")
 	string(REPLACE "-DNDEBUG" "" CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO}")
 elseif(${CMAKE_CXX_COMPILER_ID} MATCHES Clang)
@@ -110,6 +112,7 @@ elseif(${CMAKE_CXX_COMPILER_ID} MATCHES Clang)
 	endif()
 	# https://clang.llvm.org/docs/ThreadSafetyAnalysis.html
 	set(WARN_PEDANTIC_FLAGS "-Wall -Wextra -pedantic -Wno-unused-command-line-argument -Wthread-safety")
+	set(WARN_PEDANTIC_FLAGS "${WARN_PEDANTIC_FLAGS} -Werror -Wfatal-errors")
 
 	set(WARN_PEDANTIC_FLAGS "${WARN_PEDANTIC_FLAGS} -Wreturn-type")
 	set(WARN_PEDANTIC_FLAGS_FOR_C "-Wall -Wno-unused-command-line-argument") # mostly used by dependencies
