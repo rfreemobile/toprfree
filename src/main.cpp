@@ -1,4 +1,5 @@
 #include <iostream>
+#include "program.hpp"
 
 using std::cout;
 using std::cerr;
@@ -6,5 +7,6 @@ using std::cin;
 using std::endl;
 
 int main() {
-	cout << "Hello." << endl;
+	cProgram program;
+	program.run();
 }
