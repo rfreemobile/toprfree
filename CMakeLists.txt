@@ -162,7 +162,11 @@ endif()
 ########################### SOURCE FILES ###########################
 include_directories( src/ )
 
-file(GLOB SOURCES_GROUP_MAINPROGRAM src/* )
+file(GLOB SOURCES_GROUP_MAINPROGRAM src/*
+	src/sensor/*
+	src/mylib/*
+)
+# ^-- TODO perhaps separate mylib a bit?
 
 list(REMOVE_ITEM SOURCES_GROUP_MAINPROGRAM
 	${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp)

@@ -4,11 +4,25 @@
 
 #include "sensor/base.hpp"
 
+#include "sensor/interrupts.ipp"
+
+class cSensorInterruptsError : public std::runtime_error {
+	public:
+		cSensorInterruptsError(const string & err="");
+};
+
 class cSensorInterrupts : cSensor {
 	public:
 		virtual ~cSensorInterrupts()=default;
-};
+		virtual void gather();
 
+	protected:
+		int m_num_cpu;
+
+		cOneInterruptInfo m_info;
+		cOneInterruptCounter m_current;
+		cOneInterruptCounter m_diff;
+};
 
 #endif
 
