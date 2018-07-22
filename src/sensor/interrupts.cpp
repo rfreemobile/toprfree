@@ -10,6 +10,16 @@
 #include <regex>
 #include <sstream>
 
+cSensorInterruptsError::cSensorInterruptsError(const string & err)
+	: std::runtime_error(
+		err.size() ?
+			("Sensors error: " + err) :
+			("Sensors error.")
+	)
+{ }
+
+// ===========================================================================================================
+
 unique_ptr<cSensorInterrupts> factory_cSensorInterrupts() {
 	auto obj = make_unique<cSensorInterrupts>();
 	return obj;
@@ -59,6 +69,21 @@ void cSensorInterrupts::gather() {
 		std::getline( thefile , line );
 		cout << "line [" << line << "]" << endl;
 
+		if (line_nr==1) { // parse number of CPUs
+			int num=0;
+			{
+				std::istringstream iss(line);
+				std::string cpu_name;
+				while(!iss.eof()) {
+					iss>>cpu_name;
+					if (! iss.fail()) ++num; // fail marks the inability to read next word, so we're done
+				}
+			}
+			m_num_cpu = num;
+			if (m_num_cpu < 1) throw cSensorInterruptsError("Can not find any CPU in the interrupts list");
+			cout << "CPU count: " << m_num_cpu << endl;
+		}
+
 		if (line_nr==2) {
 			line = "   9:         1          2          3          4          5          42  name1    name-two      nic[3]";
 			cout << "line [" << line << "]" << endl;
@@ -85,6 +110,8 @@ void cSensorInterrupts::gather() {
 		++line_nr;
 		if (line_nr > 2) break;
 	}
+
+	if (line_nr<=1) throw cSensorInterruptsError("No interrupt info could be read.");
 }
 
 

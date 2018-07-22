@@ -6,6 +6,11 @@
 
 #include "sensor/interrupts.ipp"
 
+class cSensorInterruptsError : public std::runtime_error {
+	public:
+		cSensorInterruptsError(const string & err="");
+};
+
 class cSensorInterrupts : cSensor {
 	public:
 		virtual ~cSensorInterrupts()=default;
