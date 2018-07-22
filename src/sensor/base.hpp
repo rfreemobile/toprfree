@@ -5,6 +5,8 @@
 class cSensor {
 	public:
 		virtual ~cSensor()=default;
+
+		virtual void gather() = 0;
 };
 
 #endif

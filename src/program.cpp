@@ -3,6 +3,7 @@
 #include "mylib/iostream.hpp"
 
 #include "sensor/interrupts.hpp"
+
 #include <boost/program_options.hpp>
 
 
@@ -23,7 +24,7 @@ void cProgram_pimpl_delete::operator()(cProgram_pimpl *p) const { delete p; }
 cProgram::cProgram()
 : m_pimpl(new cProgram_pimpl)
 {
- 	m_pimpl->m_sensor_interrupts = make_shared< cSensorInterrupts > ();
+	m_pimpl->m_sensor_interrupts = factory_cSensorInterrupts(); // might convert unique_ptr to shared_ptr here, ok
 
 	namespace n_po = boost::program_options;
 	unsigned line_length = 120;
@@ -43,6 +44,8 @@ void cProgram::options(const int argc, const char * const * argv) {
 
 void cProgram::run() {
 	cout << "Running the program. Interval time is: " << m_pimpl->m_argm["interval"].as<int>() << "." << endl;
+
+	m_pimpl->m_sensor_interrupts->gather();
 }
 
 cProgram::~cProgram() { }
