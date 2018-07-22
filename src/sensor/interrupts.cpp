@@ -5,10 +5,12 @@
 #include "mylib/string.hpp"
 #include "mylib/memory.hpp"
 #include "mylib/iostream.hpp"
+#include "mylib/regex.hpp"
 
 #include <fstream>
 #include <regex>
 #include <sstream>
+#include <cassert>
 
 cSensorInterruptsError::cSensorInterruptsError(const string & err)
 	: std::runtime_error(
@@ -67,6 +69,7 @@ void cSensorInterrupts::gather() {
 	while (thefile.good()) {
 		string line;
 		std::getline( thefile , line );
+		if (thefile.fail()) break; // done
 		cout << "line [" << line << "]" << endl;
 
 		if (line_nr==1) { // parse number of CPUs
@@ -83,32 +86,43 @@ void cSensorInterrupts::gather() {
 			if (m_num_cpu < 1) throw cSensorInterruptsError("Can not find any CPU in the interrupts list");
 			cout << "CPU count: " << m_num_cpu << endl;
 		}
-
-		if (line_nr==2) {
-			line = "   9:         1          2          3          4          5          42  name1    name-two      nic[3]";
+		else
+		{ // non-header normal line
+			// line = "   9:         1          2          3          4          5          42  name1    name-two      nic[3]";
 			cout << "line [" << line << "]" << endl;
-			std::regex expr_first_name;
-			expr_first_name.imbue( std::locale::classic() ); // C locale
-			expr_first_name = "[[:blank:]]*([[:alnum:]]+):";
+			std::regex expr_name_id = make_regex_C("^[[:blank:]]*([[:alnum:]]+):"); // get the ID
 
-			/*
-			std::regex_iterator<std::string::iterator> rit(line.begin(), line.end(), expr_first_name);
-			const decltype(rit) rit_end;
-			while (rit != rit_end) {
-				cout << "match [" << rit->str() << "]" << endl;
-				++rit;
-			}*/
+			std::smatch matched_name_id;
+			if (!std::regex_search(line, matched_name_id, expr_name_id)) throw cSensorInterruptsError("Can not parse (for ID)");
+			if (! (matched_name_id.size() == 1+1)) throw cSensorInterruptsError("Got more then exactly 1 ID");
+			std::string data_id = matched_name_id[1];
 
-			std::smatch matched;
-			if (std::regex_search(line, matched, expr_first_name)) {
-				cout << endl << "maches count: " << matched.size() << endl;
-				for (size_t i=0; i<matched.size(); ++i) { cout << "match #"<<i<<" ["<<matched[i]<<"]" << endl; }
-				line = matched.suffix().str();
-			}
-		}
+			if (data_id != "ERR") { // ERR does not have normal counters
+				vector<int> counters;
+				counters.reserve(m_num_cpu);
+				assert( matched_name_id.ready() );
+				{
+					const auto & part = matched_name_id.suffix().str();
+					std::regex expr_next_count = make_regex_C("[[:blank:]]*([[:digit:]]+)"); // get the ID
+					string x = part; // why is this needed? TODO
+					std::regex_iterator<std::string::iterator> rit(x.begin() , x.end(), expr_next_count,
+						std::regex_constants::match_continuous
+					);
+					const decltype(rit) rit_end;
+					while (rit != rit_end) {
+						if (! (rit->size() >= 1+1)) throw cSensorInterruptsError("Cant match counter text regex");
+						int count=0;
+						std::istringstream iss( (*rit)[1] );
+						iss>>count;
+						if (iss.fail()) throw cSensorInterruptsError("Cant read counter as integer");
+						cout << "got:" << count << endl;
+						++rit;
+					}
+				} // parse counters
+			} // not-ERR
+		} // non-header
 
 		++line_nr;
-		if (line_nr > 2) break;
 	}
 
 	if (line_nr<=1) throw cSensorInterruptsError("No interrupt info could be read.");
