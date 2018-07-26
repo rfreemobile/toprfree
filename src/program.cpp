@@ -46,6 +46,7 @@ void cProgram::run() {
 	cout << "Running the program. Interval time is: " << m_pimpl->m_argm["interval"].as<int>() << "." << endl;
 
 	m_pimpl->m_sensor_interrupts->gather();
+	m_pimpl->m_sensor_interrupts->print();
 }
 
 cProgram::~cProgram() { }

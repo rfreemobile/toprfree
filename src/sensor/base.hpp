@@ -7,6 +7,7 @@ class cSensor {
 		virtual ~cSensor()=default;
 
 		virtual void gather() = 0;
+		virtual void print() const = 0;
 };
 
 #endif

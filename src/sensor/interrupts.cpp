@@ -11,6 +11,7 @@
 #include <regex>
 #include <sstream>
 #include <cassert>
+#include <iomanip>
 
 cSensorInterruptsError::cSensorInterruptsError(const string & err)
 	: std::runtime_error(
@@ -29,7 +30,7 @@ unique_ptr<cSensorInterrupts> factory_cSensorInterrupts() {
 
 // ===========================================================================================================
 
-cOneInterruptCounter::cOneInterruptCounter(std::vector<int> && per_cpu_call)
+cOneInterruptCounter::cOneInterruptCounter(std::vector<cOneInterruptCounter::t_count> && per_cpu_call)
 : m_per_cpu_call( std::move(per_cpu_call) )
 { };
 
@@ -65,12 +66,14 @@ void cSensorInterrupts::gather() {
 	*/
 	std::ifstream thefile("/proc/interrupts");
 
+	m_info.clear();
+	m_current.clear();
+
 	size_t line_nr=1; // line number, human-numbering (starting at 1)
 	while (thefile.good()) {
 		string line;
 		std::getline( thefile , line );
 		if (thefile.fail()) break; // done
-		cout << "line [" << line << "]" << endl;
 
 		if (line_nr==1) { // parse number of CPUs
 			int num=0;
@@ -85,11 +88,12 @@ void cSensorInterrupts::gather() {
 			m_num_cpu = num;
 			if (m_num_cpu < 1) throw cSensorInterruptsError("Can not find any CPU in the interrupts list");
 			cout << "CPU count: " << m_num_cpu << endl;
+			m_info.reserve(m_num_cpu);
+			m_current.reserve(m_num_cpu);
 		}
 		else
 		{ // non-header normal line
 			// line = "   9:         1          2          3          4          5          42  name1    name-two      nic[3]";
-			cout << "line [" << line << "]" << endl;
 			std::regex expr_name_id = make_regex_C("^[[:blank:]]*([[:alnum:]]+):"); // get the ID
 
 			std::smatch matched_name_id;
@@ -98,27 +102,66 @@ void cSensorInterrupts::gather() {
 			std::string data_id = matched_name_id[1];
 
 			if (data_id != "ERR") { // ERR does not have normal counters
-				vector<int> counters;
-				counters.reserve(m_num_cpu);
+				vector<cOneInterruptCounter::t_count> c_per_cpu;
+				c_per_cpu.reserve(m_num_cpu);
 				assert( matched_name_id.ready() );
-				{
+				{ // non-ERR 2
 					const auto & part = matched_name_id.suffix().str();
 					std::regex expr_next_count = make_regex_C("[[:blank:]]*([[:digit:]]+)"); // get the ID
-					string x = part; // why is this needed? TODO
-					std::regex_iterator<std::string::iterator> rit(x.begin() , x.end(), expr_next_count,
+					string str_after_id = part; // why is this needed? TODO  why can't this be const :< ?
+					// cout << "str_after_id (in id="<<data_id<<") [" << str_after_id << "]" << endl;
+					std::regex_iterator<std::string::iterator> rit(str_after_id.begin() , str_after_id.end(), expr_next_count,
 						std::regex_constants::match_continuous
 					);
 					const decltype(rit) rit_end;
+					decltype( rit->position() ) last_suffix_pos{0}; // position in str_after_id - of suffix after per-CPU
+						// (position of 1st character of unmatched after reading this per-CPU counters)
+
 					while (rit != rit_end) {
 						if (! (rit->size() >= 1+1)) throw cSensorInterruptsError("Cant match counter text regex");
-						int count=0;
+						cOneInterruptCounter::t_count count=0;
 						std::istringstream iss( (*rit)[1] );
 						iss>>count;
 						if (iss.fail()) throw cSensorInterruptsError("Cant read counter as integer");
-						cout << "got:" << count << endl;
+						last_suffix_pos = rit->position(0); // update the last (so far) suffix
 						++rit;
-					}
-				} // parse counters
+						c_per_cpu.push_back(count);
+					} // all CPUs
+
+					if (( last_suffix_pos >= 1 )) { // parsing per-CPU worked
+						// assert that last_suffix_pos is < size of str_after_id
+						assert(last_suffix_pos >= 0);
+						size_t last_suffix_pos_unsigned{ static_cast<size_t>(last_suffix_pos) };
+						if (!  ( last_suffix_pos_unsigned < str_after_id.size()   ) ) {
+							std::ostringstream oss;
+							oss << "Can't continue after per-CPU counters (too long position) "
+								<< last_suffix_pos_unsigned << " should be < than " << str_after_id.size() << ".";
+							throw cSensorInterruptsError(oss.str());
+						}
+
+						// kind of string-view, using str_after_id that must remain valid string
+						//const char * part_names_char_start = & str_after_id.at(last_suffix_pos);
+						//const char * part_names_char_end = & str_after_id.at(last_suffix_pos);
+
+						cOneInterruptInfo one_info(data_id,"c1","c2","c3");
+						m_info.push_back( std::move(one_info) );
+						cOneInterruptCounter one_interrupt(std::move(c_per_cpu));
+						m_current.push_back( std::move(one_interrupt) );
+
+						//const auto & part = matched_name_id.suffix().str();
+						//std::regex expr_next_name = make_regex_C("[[:blank:]]*([[:print:]]+)"); // get the text
+						/*
+						string x = part_names; // why is this needed? TODO
+						std::regex_iterator<std::string::iterator> rit(x.begin() , x.end(), expr_next_count,
+							std::regex_constants::match_continuous
+						);
+						const decltype(rit) rit_end;
+						while (rit != rit_end) {
+							++rit;
+						*/
+
+					} // per-CPU worked
+				} // not-ERR2
 			} // not-ERR
 		} // non-header
 
@@ -126,6 +169,16 @@ void cSensorInterrupts::gather() {
 	}
 
 	if (line_nr<=1) throw cSensorInterruptsError("No interrupt info could be read.");
+}
+
+void cSensorInterrupts::print() const {
+	cout << "CPU(s)=" << m_num_cpu << endl;
+	size_t size_inter = m_info.size();
+	assert( m_info.size() == m_current.size() );
+	for (size_t ix_inter=0; ix_inter<size_inter; ++ix_inter) {
+		cout << std::setw(4) << m_info.at(ix_inter).m_id << " ";
+		cout << endl;
+	}
 }
 
 

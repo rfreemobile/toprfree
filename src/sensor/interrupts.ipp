@@ -14,12 +14,14 @@ unique_ptr<cSensorInterrupts> factory_cSensorInterrupts();
 /// @class this data are the counters, changable
 class cOneInterruptCounter final {
 	public:
+		using t_count = long long int;
+
 		cOneInterruptCounter()=default;
-		cOneInterruptCounter(std::vector<int> && per_cpu_call);
+		cOneInterruptCounter(std::vector<cOneInterruptCounter::t_count> && per_cpu_call);
 
 		/// should not be changed from outside
 		/// @{
-		std::vector<int> m_per_cpu_call; /// per given CPU (0-indexed): number of interrupt calls
+		std::vector<cOneInterruptCounter::t_count> m_per_cpu_call; /// per given CPU (0-indexed): number of interrupt calls
 		/// @}
 };
 
