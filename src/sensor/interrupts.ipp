@@ -32,6 +32,7 @@ class cOneInterruptInfo final {
 		cOneInterruptInfo(const string & col0, const string & col1, const string & col2, const string & col3);
 
 		int get_id_num() const; ///< is non-standard, then returns the name, otherwise throws
+		string get_full_name() const;
 
 		/// should not be changed from outside
 		/// @{
