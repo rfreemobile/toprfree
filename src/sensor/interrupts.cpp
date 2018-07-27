@@ -76,7 +76,7 @@ void cSensorInterrupts::gather() {
 	            CPU0       CPU1       CPU2       CPU3       CPU4       CPU5
 	               0:         46          0          0          0          0          0  IR-IO-APIC    2-edge      timer
 	*/
-	bool dbg=1;
+	bool dbg=0;
 
 	std::ifstream thefile("/proc/interrupts");
 
@@ -84,7 +84,6 @@ void cSensorInterrupts::gather() {
 	m_current.clear();
 
 	size_t line_nr=1; // line number, human-numbering (starting at 1)
-
 
 	while (thefile.good()) {
 		string line;
@@ -171,7 +170,7 @@ void cSensorInterrupts::gather() {
 					const decltype(rit) rit_end;
 					size_t ix=0;
 					while (rit != rit_end) {
-						cerr << "parsing names...  ix=" << ix << endl;
+						if (dbg) cerr << "parsing names...  ix=" << ix << endl;
 						const string value = (*rit)[1].str();
 						// cerr << "parsing names...  ix=" << ix << " is [" << value << "]" << endl;
 						names.at(ix) = std::move(value);
@@ -184,7 +183,7 @@ void cSensorInterrupts::gather() {
 							//cerr << "Suffix now is: [" << rit->suffix() <<  "]" << endl;
 							auto pos_dev_1 = (*rit)[1].first; // end of current name
 							auto pos_dev_2 = str_after_id.end(); // end of string
-							cerr << "Device names string: [" << string{ pos_dev_1, pos_dev_2  } << "]" << endl;
+							if (dbg) cerr << "Device names string: [" << string{ pos_dev_1, pos_dev_2  } << "]" << endl;
 
 							// tokenize the device(s) name(s)
 							std::regex expr_next_dev = make_regex_C("[[:blank:]]*([[:graph:]^,]+),{0,1}");
@@ -192,9 +191,10 @@ void cSensorInterrupts::gather() {
 								std::regex_constants::match_continuous
 							);
 							while (rit_dev != rit_end) {
-								cerr << "0=" << (*rit_dev)[0] << endl;
-								cerr << "1=" << (*rit_dev)[1] << endl;
-								//cerr << "2=" << (*rit_dev)[2] << endl;
+								if (dbg) {
+									cerr << "dev match 0=" << (*rit_dev)[0] << endl;
+									cerr << "dev match 1=" << (*rit_dev)[1] << endl;
+								}
 								devices.push_back( (*rit_dev)[1].str() );
 								++rit_dev;
 							}
@@ -208,7 +208,7 @@ void cSensorInterrupts::gather() {
 						} // last index matched
 					}
 
-					cerr << "names: 0=[" << names.at(0) << "] 1=[" << names.at(1) << "]" << endl;
+					if (dbg) cerr << "names: 0=[" << names.at(0) << "] 1=[" << names.at(1) << "]" << endl;
 					cOneInterruptInfo one_info(data_id, names.at(0), names.at(1), std::move(devices)); // TODO
 					m_info.push_back( std::move(one_info) );
 					cOneInterruptCounter one_interrupt(std::move(counter_per_cpu));
