@@ -54,13 +54,13 @@ void cProgram::run() {
 	long int loop_counter=0;
 	while (!exit_program) {
 		++loop_counter;
-		cerr << "------- loop " << endl;
+		// cerr << "------- loop " << endl;
 
 		m_pimpl->m_sensor_interrupts->gather();
 		m_pimpl->m_sensor_interrupts->calc_stats();
 		m_pimpl->m_sensor_interrupts->print();
 
-		cerr << "Sleep... " << endl;
+		// cerr << "Sleep... " << endl;
 		std::this_thread::sleep_for( std::chrono::milliseconds( sleep_time_ms  ));
 		m_pimpl->m_sensor_interrupts->step();
 

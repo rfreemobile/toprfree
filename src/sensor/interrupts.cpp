@@ -7,6 +7,8 @@
 #include "mylib/iostream.hpp"
 #include "mylib/regex.hpp"
 
+#include "mylib/string_trim.hpp"
+
 #include <fstream>
 #include <regex>
 #include <sstream>
@@ -53,7 +55,7 @@ m_name1( !m_standard ? col1 : ""),
 m_name2( !m_standard ? col2 : ""),
 m_name(
 	m_standard ?
-	col1 // for "NMI" the name is "Non-maskable interrupts"
+	pfplib::ltrim_copy(col1) // for "NMI" the name is "Non-maskable interrupts"
 	: (col1+" "+col2) // for ID e.g. 0 the name will be sum of collumns eg "IR-IO-APIC 2-edge timer"
 )
 ,m_devs(devs)
@@ -89,11 +91,11 @@ string cOneInterruptInfo::make_dev_str() const {
 
 void cSensorInterrupts::calc_stats() {
 	if (m_before_first) { // now doing first step, create the m_diff table
-		cerr << "calc: before first..." << endl;
+		// cerr << "calc: before first..." << endl;
 		m_diff = m_current;
 	}
 	else {
-		cerr << "calc: normal" << endl;
+		// cerr << "calc: normal" << endl;
 		size_t size_inter = m_current.size();
 		for (size_t i_inter=0; i_inter < size_inter; ++i_inter) {
 			assert( m_current.at(i_inter).m_per_cpu_call.size() == this->m_num_cpu );
@@ -110,7 +112,7 @@ void cSensorInterrupts::calc_stats() {
 }
 
 void cSensorInterrupts::step() {
-	cerr << "Step... " << endl;
+	// cerr << "Step... " << endl;
 	m_previous = m_current;
 	m_before_first = false;
 }
@@ -121,8 +123,7 @@ void cSensorInterrupts::gather() {
 	               0:         46          0          0          0          0          0  IR-IO-APIC    2-edge      timer
 	*/
 	bool dbg=0;
-
-	cerr << "Gathering... " << endl;
+	// cerr << "Gathering... " << endl;
 
 	std::ifstream thefile("/proc/interrupts");
 
@@ -148,7 +149,7 @@ void cSensorInterrupts::gather() {
 			}
 			m_num_cpu = num;
 			if (m_num_cpu < 1) throw cSensorInterruptsError("Can not find any CPU in the interrupts list");
-			cout << "CPU count: " << m_num_cpu << endl;
+			if (dbg) cerr << "CPU count: " << m_num_cpu << endl;
 			m_info.reserve(m_num_cpu);
 			m_current.reserve(m_num_cpu);
 		}
@@ -162,8 +163,6 @@ void cSensorInterrupts::gather() {
 			if (!std::regex_search(line, matched_name_id, expr_name_id)) throw cSensorInterruptsError("Can not parse (for ID)");
 			if (! (matched_name_id.size() == 1+1)) throw cSensorInterruptsError("Got more then exactly 1 ID");
 			std::string data_id = matched_name_id[1];
-
-			dbg = (data_id == "LOC");
 
 			if ( (data_id != "ERR") && (data_id != "MIS") ) { // ERR (and MIS) does not have normal counters
 				vector<cOneInterruptCounter::t_count> counter_per_cpu;
@@ -280,7 +279,7 @@ void cSensorInterrupts::print() const {
 	assert( m_info.size() == m_current.size() );
 
 	if (m_before_first) {
-		cout << "Gathering data to compare..." << endl;
+		cout << "Can not show data yet (gathering more data to see speed)" << endl;
 		return;
 	}
 
@@ -297,8 +296,9 @@ void cSensorInterrupts::print() const {
 			cout << "|";
 			first=0;
 		}
-
-		cout << " " <<  info.m_devs_str ;
+		cout << " ";
+		if (! info.m_standard) cout << "device: " << info.m_devs_str ;
+		else cout << "(" << info.m_name << ")";
 		cout << endl;
 	}
 }

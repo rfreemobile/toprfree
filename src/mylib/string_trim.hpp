@@ -8,6 +8,8 @@
  * @url http://archive.is/bHGAC
 */
 
+namespace pfplib {
+
 // trim from start (in place)
 static inline void ltrim(std::string &s) {
     s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](int ch) {
@@ -46,6 +48,7 @@ static inline std::string trim_copy(std::string s) {
     return s;
 }
 
+} // namespace
 
 #endif
 
