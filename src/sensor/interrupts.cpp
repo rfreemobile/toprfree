@@ -1,6 +1,6 @@
 
 #include "sensor/interrupts.hpp"
-#include "sensor/interrupts.ipp"
+#include "sensor/interrupts-api.hpp"
 
 #include "mylib/string.hpp"
 #include "mylib/memory.hpp"
