@@ -16,6 +16,15 @@
 #include <iomanip>
 #include <numeric>
 
+// ===========================================================================================================
+
+cInterruptOptions::cInterruptOptions()
+: m_showifsum{0}
+{
+}
+
+// ===========================================================================================================
+
 cSensorInterruptsError::cSensorInterruptsError(const string & err)
 	: std::runtime_error(
 		err.size() ?
@@ -300,9 +309,18 @@ void cSensorInterrupts::print() const {
 	cout << string(5,'-');
 	cout << endl;
 
+	size_t count_hidden{0};
+
 	for (size_t ix_inter=0; ix_inter<size_inter; ++ix_inter) {
 		const auto & diff = m_diff.at(ix_inter);
 		const auto & info = m_info.at(ix_inter);
+
+		bool show=true;
+		if (diff.m_sum_call < m_options.m_showifsum) show=false;
+		if (!show) {
+			++count_hidden;
+			continue;
+		}
 
 		cout << std::setw(wid_id) << info.m_id << " ";
 		cout << ":";
@@ -324,6 +342,11 @@ void cSensorInterrupts::print() const {
 		if (! info.m_standard) cout << info.m_devs_str ;
 		else cout << "(" << info.m_name << ")";
 		cout << endl;
+	}
+	if (count_hidden==0) {
+		cout << "(All interrupts are displayed)" << endl;
+	} else {
+		cout << "(" << count_hidden << " interrupt(s) are hidden due to options)" << endl;
 	}
 	cout<<endl;
 }

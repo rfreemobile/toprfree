@@ -58,6 +58,12 @@ class cOneInterruptInfo final {
 		string make_dev_str() const; ///< returns string with all devices, to be saved into m_devs_str
 };
 
+struct cInterruptOptions {
+	cInterruptOptions();
+
+	cOneInterruptCounter::t_count m_showifsum;
+};
+
 #endif
 
 
