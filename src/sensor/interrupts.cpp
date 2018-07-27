@@ -48,6 +48,7 @@ m_name(
 	: (col1+" "+col2) // for ID e.g. 0 the name will be sum of collumns eg "IR-IO-APIC 2-edge timer"
 )
 ,m_devs(devs)
+,m_devs_str( make_dev_str() ) // using m_devs just set above
 { }
 
 bool cOneInterruptInfo::is_id_standard_and_parse(const string & id_str, int & out_id_num) { ///< returns true for ID like "NMI", false for like "30"
@@ -64,7 +65,12 @@ bool cOneInterruptInfo::is_id_standard(const string & id_str) {
 }
 
 string cOneInterruptInfo::get_full_info() const {
-	string ret = "name=" + m_name + " name1=" + m_name1 + " name2=" + m_name2+" ";
+	string ret = "name=" + m_name + " name1=" + m_name1 + " name2=" + m_name2+" " + m_devs_str;
+	return ret;
+}
+
+string cOneInterruptInfo::make_dev_str() const {
+	string ret;
 	for (const string & dev : m_devs) ret += dev + ";";
 	return ret;
 }
@@ -89,7 +95,6 @@ void cSensorInterrupts::gather() {
 		string line;
 		std::getline( thefile , line );
 		if (thefile.fail()) break; // done
-		vector<string> devices;
 
 		if (line_nr==1) { // parse number of CPUs
 			int num=0;
@@ -110,12 +115,15 @@ void cSensorInterrupts::gather() {
 		else
 		{ // non-header normal line
 			// line = "   9:         1          2          3          4          5          42  name1    name-two      nic[3]";
+			vector<string> devices;
 			std::regex expr_name_id = make_regex_C("^[[:blank:]]*([[:alnum:]]+):"); // get the ID
 
 			std::smatch matched_name_id;
 			if (!std::regex_search(line, matched_name_id, expr_name_id)) throw cSensorInterruptsError("Can not parse (for ID)");
 			if (! (matched_name_id.size() == 1+1)) throw cSensorInterruptsError("Got more then exactly 1 ID");
 			std::string data_id = matched_name_id[1];
+
+			dbg = (data_id == "LOC");
 
 			if ( (data_id != "ERR") && (data_id != "MIS") ) { // ERR (and MIS) does not have normal counters
 				vector<cOneInterruptCounter::t_count> counter_per_cpu;
@@ -162,6 +170,8 @@ void cSensorInterrupts::gather() {
 						// rest of the line is the one big name
 						names.at(0) = str_after_id.substr(last_suffix_pos , str_after_id.size());
 					} // standard like NMI
+					else
+					{ // custom-interrupt: parse names and devices
 
 					std::regex expr_next_name = make_regex_C("[[:blank:]]*([[:graph:]]+)"); // get the text
 					std::regex_iterator<std::string::iterator> rit(str_after_id.begin()+last_suffix_pos , str_after_id.end() , expr_next_name,
@@ -207,6 +217,7 @@ void cSensorInterrupts::gather() {
 							break;
 						} // last index matched
 					}
+					} // custom interrupt
 
 					if (dbg) cerr << "names: 0=[" << names.at(0) << "] 1=[" << names.at(1) << "]" << endl;
 					cOneInterruptInfo one_info(data_id, names.at(0), names.at(1), std::move(devices)); // TODO
@@ -228,8 +239,20 @@ void cSensorInterrupts::print() const {
 	size_t size_inter = m_info.size();
 	assert( m_info.size() == m_current.size() );
 	for (size_t ix_inter=0; ix_inter<size_inter; ++ix_inter) {
-		cout << std::setw(4) << m_info.at(ix_inter).m_id << " ";
-		cout << m_info.at(ix_inter).get_full_info() ;
+		const auto & current = m_current.at(ix_inter);
+		const auto & info = m_info.at(ix_inter);
+
+		cout << std::setw(4) << info.m_id << " ";
+
+		bool first=1;
+		for (const auto & value : current.m_per_cpu_call) {
+			if (first) cout << "|";
+			cout << std::setw(9) << value ;
+			cout << "|";
+			first=0;
+		}
+
+		cout << info.m_devs_str ;
 		cout << endl;
 	}
 }
