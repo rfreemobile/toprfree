@@ -14,14 +14,18 @@ class cSensorInterruptsError : public std::runtime_error {
 class cSensorInterrupts : cSensor {
 	public:
 		virtual ~cSensorInterrupts()=default;
+
 		virtual void gather();
+		virtual void print() const;
+		virtual void step();
 
 	protected:
-		int m_num_cpu;
+		size_t m_num_cpu;
 
-		cOneInterruptInfo m_info;
-		cOneInterruptCounter m_current;
-		cOneInterruptCounter m_diff;
+		vector<cOneInterruptInfo> m_info; ///< for each interrupt: its information
+		vector<cOneInterruptCounter> m_current; ///< for each interrupt: all its CPU counters - current value
+		vector<cOneInterruptCounter> m_previous; ///< same as m_current but previous iteration
+		vector<cOneInterruptCounter> m_diff; ///< same as m_current but counters are difference since previous step
 };
 
 #endif
