@@ -32,7 +32,7 @@ unique_ptr<cSensorInterrupts> factory_cSensorInterrupts() {
 
 cOneInterruptCounter::cOneInterruptCounter(std::vector<cOneInterruptCounter::t_count> && per_cpu_call)
 : m_per_cpu_call( std::move(per_cpu_call) )
-{ };
+{ }
 
 // ===========================================================================================================
 
