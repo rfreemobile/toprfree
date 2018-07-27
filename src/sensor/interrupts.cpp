@@ -276,6 +276,7 @@ void cSensorInterrupts::gather() {
 void cSensorInterrupts::print() const {
 	cout << "CPU(s)=" << m_num_cpu << endl;
 	size_t size_inter = m_info.size();
+	size_t size_cpu = this->m_num_cpu;
 	assert( m_info.size() == m_current.size() );
 
 	if (m_before_first) {
@@ -283,24 +284,48 @@ void cSensorInterrupts::print() const {
 		return;
 	}
 
+	int wid_id = 5;
+	int wid_sum = 5;
+	int wid_cpu = wid_sum;
+
+	cout << std::setw(wid_id) << "Inter" << " :" ;
+	cout << std::setw(wid_sum) << "Sum" << ":" ;
+	for (size_t ix_cpu=0; ix_cpu<size_cpu; ++ix_cpu) cout << std::setw(wid_cpu) << ix_cpu << "|";
+	cout << "Device";
+	cout << endl;
+
+	cout << string(wid_id,'-') << " :" ;
+	cout << string(wid_sum,'-') << ":" ;
+	for (size_t ix_cpu=0; ix_cpu<size_cpu; ++ix_cpu) cout << string(wid_cpu,'-') << "|";
+	cout << string(5,'-');
+	cout << endl;
+
 	for (size_t ix_inter=0; ix_inter<size_inter; ++ix_inter) {
 		const auto & diff = m_diff.at(ix_inter);
 		const auto & info = m_info.at(ix_inter);
 
-		cout << std::setw(4) << info.m_id << " ";
+		cout << std::setw(wid_id) << info.m_id << " ";
+		cout << ":";
 
-		bool first=1;
+		cout << std::setw(wid_sum) << diff.m_sum_call ;
+		cout << ":" ;
+
 		for (const auto & value : diff.m_per_cpu_call) {
-			if (first) cout << ":";
-			cout << std::setw(5) << value ;
+			// 123
+			// 1K
+			// 123 K
+			// 1M
+			// 123 M
+			// 5 char wide max (TODO)
+			cout << std::setw(wid_cpu) << value ;
 			cout << "|";
-			first=0;
 		}
 		cout << " ";
-		if (! info.m_standard) cout << "device: " << info.m_devs_str ;
+		if (! info.m_standard) cout << info.m_devs_str ;
 		else cout << "(" << info.m_name << ")";
 		cout << endl;
 	}
+	cout<<endl;
 }
 
 
