@@ -5,6 +5,8 @@
 #include "sensor/interrupts.hpp"
 
 #include <boost/program_options.hpp>
+#include <thread>
+#include <chrono>
 
 
 class cProgram_pimpl {
@@ -43,10 +45,18 @@ void cProgram::options(const int argc, const char * const * argv) {
 }
 
 void cProgram::run() {
-	cout << "Running the program. Interval time is: " << m_pimpl->m_argm["interval"].as<int>() << "." << endl;
+	int sleep_time_ms = m_pimpl->m_argm["interval"].as<int>();
+	cout << "Running the program. Interval time is: " << sleep_time_ms << "." << endl;
 
-	m_pimpl->m_sensor_interrupts->gather();
-	m_pimpl->m_sensor_interrupts->print();
+	bool exit_program=0;
+	long int loop_counter=0;
+	while (!exit_program) {
+		m_pimpl->m_sensor_interrupts->gather();
+		m_pimpl->m_sensor_interrupts->print();
+		++loop_counter;
+		std::this_thread::sleep_for( std::chrono::milliseconds( sleep_time_ms  ));
+		if (loop_counter >= 4) exit_program=1;
+	}
 }
 
 cProgram::~cProgram() { }
