@@ -1,6 +1,6 @@
 
 #include "sensor/interrupts.hpp"
-#include "sensor/interrupts.ipp"
+#include "sensor/interrupts-api.hpp"
 
 #include "mylib/string.hpp"
 #include "mylib/memory.hpp"
@@ -77,13 +77,15 @@ string cOneInterruptInfo::make_dev_str() const {
 
 // ===========================================================================================================
 
-void cSensorInterrupts::step() {
-	size_t size_inter = m_current.size();
 
+void cSensorInterrupts::calc_stats() {
 	if (m_before_first) { // now doing first step, create the m_diff table
+		cerr << "calc: before first..." << endl;
 		m_diff = m_current;
 	}
 	else {
+		cerr << "calc: normal" << endl;
+		size_t size_inter = m_current.size();
 		for (size_t i_inter=0; i_inter < size_inter; ++i_inter) {
 			assert( m_current.at(i_inter).m_per_cpu_call.size() == this->m_num_cpu );
 
@@ -97,8 +99,11 @@ void cSensorInterrupts::step() {
 			} // all cpu-counter of interrupt
 
 		} // all interrupt
-	} // normal step
+	} // normal calc
+}
 
+void cSensorInterrupts::step() {
+	cerr << "Step... " << endl;
 	m_previous = m_current;
 	m_before_first = false;
 }
@@ -109,6 +114,8 @@ void cSensorInterrupts::gather() {
 	               0:         46          0          0          0          0          0  IR-IO-APIC    2-edge      timer
 	*/
 	bool dbg=0;
+
+	cerr << "Gathering... " << endl;
 
 	std::ifstream thefile("/proc/interrupts");
 

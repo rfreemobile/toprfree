@@ -4,7 +4,7 @@
 
 #include "sensor/base.hpp"
 
-#include "sensor/interrupts.ipp"
+#include "sensor/interrupts-api.hpp"
 
 class cSensorInterruptsError : public std::runtime_error {
 	public:
@@ -16,6 +16,7 @@ class cSensorInterrupts : cSensor {
 		virtual ~cSensorInterrupts()=default;
 
 		virtual void gather();
+		virtual void calc_stats();
 		virtual void print() const;
 		virtual void step();
 
