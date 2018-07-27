@@ -1,6 +1,6 @@
 #pragma once
-#ifndef INCLUDED_src_sensors_interrupts_ipp
-#define INCLUDED_src_sensors_interrupts_ipp
+#ifndef INCLUDED_src_sensors_interrupts_api_hpp
+#define INCLUDED_src_sensors_interrupts_api_hpp
 
 #include "sensor/base.hpp"
 

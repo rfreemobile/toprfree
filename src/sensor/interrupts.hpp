@@ -4,7 +4,7 @@
 
 #include "sensor/base.hpp"
 
-#include "sensor/interrupts.ipp"
+#include "sensor/interrupts-api.hpp"
 
 class cSensorInterruptsError : public std::runtime_error {
 	public:
