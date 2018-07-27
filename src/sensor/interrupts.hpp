@@ -16,6 +16,7 @@ class cSensorInterrupts : cSensor {
 		virtual ~cSensorInterrupts()=default;
 
 		virtual void gather();
+		virtual void calc_stats();
 		virtual void print() const;
 		virtual void step();
 
