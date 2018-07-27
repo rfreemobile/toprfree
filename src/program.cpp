@@ -35,6 +35,7 @@ cProgram::cProgram()
  	m_pimpl->m_boostPO_desc->add_options()
 	 	("interval", n_po::value<int>()->default_value(2000), "Interval between displaying data, in msec.")
 		("mainloops", n_po::value<int>()->default_value(5), "How many iterations of main loop to take. 0 = run forever")
+		("showifsum", n_po::value<long int>()->default_value(1), "Show only interrupts with this or more events Sum.")
  	;
 
 }
@@ -48,19 +49,21 @@ void cProgram::options(const int argc, const char * const * argv) {
 void cProgram::run() {
 	int sleep_time_ms = m_pimpl->m_argm["interval"].as<int>();
 	int mainloops = m_pimpl->m_argm["mainloops"].as<int>();
+	m_pimpl->m_sensor_interrupts->m_options.m_showifsum = m_pimpl->m_argm["showifsum"].as<long int>();
+
 	cout << "Running the program. Interval time is: " << sleep_time_ms << "." << endl;
 
 	bool exit_program=0;
 	long int loop_counter=0;
 	while (!exit_program) {
 		++loop_counter;
-		cerr << "------- loop " << endl;
+		// cerr << "------- loop " << endl;
 
 		m_pimpl->m_sensor_interrupts->gather();
 		m_pimpl->m_sensor_interrupts->calc_stats();
 		m_pimpl->m_sensor_interrupts->print();
 
-		cerr << "Sleep... " << endl;
+		// cerr << "Sleep... " << endl;
 		std::this_thread::sleep_for( std::chrono::milliseconds( sleep_time_ms  ));
 		m_pimpl->m_sensor_interrupts->step();
 

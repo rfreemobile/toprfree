@@ -7,11 +7,23 @@
 #include "mylib/iostream.hpp"
 #include "mylib/regex.hpp"
 
+#include "mylib/string_trim.hpp"
+
 #include <fstream>
 #include <regex>
 #include <sstream>
 #include <cassert>
 #include <iomanip>
+#include <numeric>
+
+// ===========================================================================================================
+
+cInterruptOptions::cInterruptOptions()
+: m_showifsum{0}
+{
+}
+
+// ===========================================================================================================
 
 cSensorInterruptsError::cSensorInterruptsError(const string & err)
 	: std::runtime_error(
@@ -31,8 +43,16 @@ unique_ptr<cSensorInterrupts> factory_cSensorInterrupts() {
 // ===========================================================================================================
 
 cOneInterruptCounter::cOneInterruptCounter(std::vector<cOneInterruptCounter::t_count> && per_cpu_call)
-: m_per_cpu_call( std::move(per_cpu_call) )
-{ }
+:
+m_per_cpu_call( std::move(per_cpu_call) )
+,m_sum_call{0}
+{
+	recalc_sum();
+}
+
+void cOneInterruptCounter::recalc_sum() {
+	m_sum_call = std::accumulate(m_per_cpu_call.begin(), m_per_cpu_call.end(), 0) ;
+};
 
 // ===========================================================================================================
 
@@ -44,7 +64,7 @@ m_name1( !m_standard ? col1 : ""),
 m_name2( !m_standard ? col2 : ""),
 m_name(
 	m_standard ?
-	col1 // for "NMI" the name is "Non-maskable interrupts"
+	pfplib::ltrim_copy(col1) // for "NMI" the name is "Non-maskable interrupts"
 	: (col1+" "+col2) // for ID e.g. 0 the name will be sum of collumns eg "IR-IO-APIC 2-edge timer"
 )
 ,m_devs(devs)
@@ -80,30 +100,28 @@ string cOneInterruptInfo::make_dev_str() const {
 
 void cSensorInterrupts::calc_stats() {
 	if (m_before_first) { // now doing first step, create the m_diff table
-		cerr << "calc: before first..." << endl;
+		// cerr << "calc: before first..." << endl;
 		m_diff = m_current;
 	}
 	else {
-		cerr << "calc: normal" << endl;
+		// cerr << "calc: normal" << endl;
 		size_t size_inter = m_current.size();
 		for (size_t i_inter=0; i_inter < size_inter; ++i_inter) {
 			assert( m_current.at(i_inter).m_per_cpu_call.size() == this->m_num_cpu );
-
 			for (size_t i_cpu=0; i_cpu < this->m_num_cpu; ++i_cpu) {
 				auto & diff =     m_diff.at(i_inter).m_per_cpu_call.at(i_cpu);
 				auto & curr =  m_current.at(i_inter).m_per_cpu_call.at(i_cpu);
 				auto & prev = m_previous.at(i_inter).m_per_cpu_call.at(i_cpu);
-
 				diff = curr - prev;
-
 			} // all cpu-counter of interrupt
-
 		} // all interrupt
+
+		for (size_t i_inter=0; i_inter < size_inter; ++i_inter) m_diff.at(i_inter).recalc_sum();
 	} // normal calc
 }
 
 void cSensorInterrupts::step() {
-	cerr << "Step... " << endl;
+	// cerr << "Step... " << endl;
 	m_previous = m_current;
 	m_before_first = false;
 }
@@ -114,8 +132,7 @@ void cSensorInterrupts::gather() {
 	               0:         46          0          0          0          0          0  IR-IO-APIC    2-edge      timer
 	*/
 	bool dbg=0;
-
-	cerr << "Gathering... " << endl;
+	// cerr << "Gathering... " << endl;
 
 	std::ifstream thefile("/proc/interrupts");
 
@@ -141,7 +158,7 @@ void cSensorInterrupts::gather() {
 			}
 			m_num_cpu = num;
 			if (m_num_cpu < 1) throw cSensorInterruptsError("Can not find any CPU in the interrupts list");
-			cout << "CPU count: " << m_num_cpu << endl;
+			if (dbg) cerr << "CPU count: " << m_num_cpu << endl;
 			m_info.reserve(m_num_cpu);
 			m_current.reserve(m_num_cpu);
 		}
@@ -155,8 +172,6 @@ void cSensorInterrupts::gather() {
 			if (!std::regex_search(line, matched_name_id, expr_name_id)) throw cSensorInterruptsError("Can not parse (for ID)");
 			if (! (matched_name_id.size() == 1+1)) throw cSensorInterruptsError("Got more then exactly 1 ID");
 			std::string data_id = matched_name_id[1];
-
-			dbg = (data_id == "LOC");
 
 			if ( (data_id != "ERR") && (data_id != "MIS") ) { // ERR (and MIS) does not have normal counters
 				vector<cOneInterruptCounter::t_count> counter_per_cpu;
@@ -270,30 +285,70 @@ void cSensorInterrupts::gather() {
 void cSensorInterrupts::print() const {
 	cout << "CPU(s)=" << m_num_cpu << endl;
 	size_t size_inter = m_info.size();
+	size_t size_cpu = this->m_num_cpu;
 	assert( m_info.size() == m_current.size() );
 
 	if (m_before_first) {
-		cout << "Gathering data to compare..." << endl;
+		cout << "Can not show data yet (gathering more data to see speed)" << endl;
 		return;
 	}
+
+	int wid_id = 5;
+	int wid_sum = 5;
+	int wid_cpu = wid_sum;
+
+	cout << std::setw(wid_id) << "Inter" << " :" ;
+	cout << std::setw(wid_sum) << "Sum" << ":" ;
+	for (size_t ix_cpu=0; ix_cpu<size_cpu; ++ix_cpu) cout << std::setw(wid_cpu) << ix_cpu << "|";
+	cout << "Device";
+	cout << endl;
+
+	cout << string(wid_id,'-') << " :" ;
+	cout << string(wid_sum,'-') << ":" ;
+	for (size_t ix_cpu=0; ix_cpu<size_cpu; ++ix_cpu) cout << string(wid_cpu,'-') << "|";
+	cout << string(5,'-');
+	cout << endl;
+
+	size_t count_hidden{0};
 
 	for (size_t ix_inter=0; ix_inter<size_inter; ++ix_inter) {
 		const auto & diff = m_diff.at(ix_inter);
 		const auto & info = m_info.at(ix_inter);
 
-		cout << std::setw(4) << info.m_id << " ";
-
-		bool first=1;
-		for (const auto & value : diff.m_per_cpu_call) {
-			if (first) cout << "|";
-			cout << std::setw(9) << value ;
-			cout << "|";
-			first=0;
+		bool show=true;
+		if (diff.m_sum_call < m_options.m_showifsum) show=false;
+		if (!show) {
+			++count_hidden;
+			continue;
 		}
 
-		cout << info.m_devs_str ;
+		cout << std::setw(wid_id) << info.m_id << " ";
+		cout << ":";
+
+		cout << std::setw(wid_sum) << diff.m_sum_call ;
+		cout << ":" ;
+
+		for (const auto & value : diff.m_per_cpu_call) {
+			// 123
+			// 1K
+			// 123 K
+			// 1M
+			// 123 M
+			// 5 char wide max (TODO)
+			cout << std::setw(wid_cpu) << value ;
+			cout << "|";
+		}
+		cout << " ";
+		if (! info.m_standard) cout << info.m_devs_str ;
+		else cout << "(" << info.m_name << ")";
 		cout << endl;
 	}
+	if (count_hidden==0) {
+		cout << "(All interrupts are displayed)" << endl;
+	} else {
+		cout << "(" << count_hidden << " interrupt(s) are hidden due to options)" << endl;
+	}
+	cout<<endl;
 }
 
 

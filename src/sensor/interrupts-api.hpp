@@ -21,8 +21,11 @@ class cOneInterruptCounter final {
 
 		/// should not be changed from outside
 		/// @{
-		std::vector<cOneInterruptCounter::t_count> m_per_cpu_call; /// per given CPU (0-indexed): number of interrupt calls
+		std::vector<cOneInterruptCounter::t_count> m_per_cpu_call; ///< per given CPU (0-indexed): number of interrupt calls
+		cOneInterruptCounter::t_count m_sum_call; ///< sum of calls - across all CPUs
 		/// @}
+
+		void recalc_sum(); ///< call this after editing from outside values, to recalc m_sum_call
 };
 
 /// @class this data is the statis information (like name etc)
@@ -53,6 +56,12 @@ class cOneInterruptInfo final {
 		static bool is_id_standard_and_parse(const string & id_str, int & out_id_num); ///< returns true for ID like "NMI", else returns false for id like "30" and then also writes number 30 into out_id_num
 
 		string make_dev_str() const; ///< returns string with all devices, to be saved into m_devs_str
+};
+
+struct cInterruptOptions {
+	cInterruptOptions();
+
+	cOneInterruptCounter::t_count m_showifsum;
 };
 
 #endif

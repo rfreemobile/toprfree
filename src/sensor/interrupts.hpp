@@ -20,6 +20,8 @@ class cSensorInterrupts : cSensor {
 		virtual void print() const;
 		virtual void step();
 
+		cInterruptOptions m_options;
+
 	protected:
 		size_t m_num_cpu;
 
