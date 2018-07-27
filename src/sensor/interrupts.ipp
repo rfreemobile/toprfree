@@ -29,10 +29,10 @@ class cOneInterruptCounter final {
 class cOneInterruptInfo final {
 	public:
 		cOneInterruptInfo()=default;
-		cOneInterruptInfo(const string & col0, const string & col1, const string & col2, const string & col3);
+		cOneInterruptInfo(const string & col0, const string & col1, const string & col2, vector<string> && devs);
 
 		int get_id_num() const; ///< is non-standard, then returns the name, otherwise throws
-		string get_full_name() const;
+		string get_full_info() const;
 
 		/// should not be changed from outside
 		/// @{
@@ -43,6 +43,7 @@ class cOneInterruptInfo final {
 		string m_name1; ///< for non-standard interrupts, the 1st word like "IR-IO-APIC", else ""
 		string m_name2; ///< for non-standard interrupts, the 2nd word like "2-edge", else ""
 		string m_name; ///< best name, e.g. part 3 of specific name like "timer" or "xhci_hcd", or the full standard name like "Non-maskable interrupts" for "NMI"
+		vector<string> m_devs; ///< devices names eg "ehci_hcd:usb3", "ehci_hcd:usb6"
 
 		/// @}
 

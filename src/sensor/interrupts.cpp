@@ -36,7 +36,7 @@ cOneInterruptCounter::cOneInterruptCounter(std::vector<cOneInterruptCounter::t_c
 
 // ===========================================================================================================
 
-cOneInterruptInfo::cOneInterruptInfo(const string & col0, const string & col1, const string & col2, const string & col3)
+cOneInterruptInfo::cOneInterruptInfo(const string & col0, const string & col1, const string & col2, vector<string> && devs)
 : m_id_as_num(0), // will be overwritten possibly
 m_standard( is_id_standard_and_parse(col0, this->m_id_as_num) ), // overwrite m_id_as_num, if ID is numerical
 m_id(col0),
@@ -44,9 +44,10 @@ m_name1( !m_standard ? col1 : ""),
 m_name2( !m_standard ? col2 : ""),
 m_name(
 	m_standard ?
-	"standard=" + col1 // for "NMI" the name is "Non-maskable interrupts"
-	: (col1+" "+col2+"("+col3+")") // for ID e.g. 0 the name will be sum of collumns eg "IR-IO-APIC 2-edge timer"
+	col1 // for "NMI" the name is "Non-maskable interrupts"
+	: (col1+" "+col2) // for ID e.g. 0 the name will be sum of collumns eg "IR-IO-APIC 2-edge timer"
 )
+,m_devs(devs)
 { }
 
 bool cOneInterruptInfo::is_id_standard_and_parse(const string & id_str, int & out_id_num) { ///< returns true for ID like "NMI", false for like "30"
@@ -62,8 +63,10 @@ bool cOneInterruptInfo::is_id_standard(const string & id_str) {
 	return is_id_standard_and_parse(id_str,x);
 }
 
-string cOneInterruptInfo::get_full_name() const {
-	return "name=" + m_name + " name1=" + m_name1 + " name2=" + m_name2 ; // TODO better format
+string cOneInterruptInfo::get_full_info() const {
+	string ret = "name=" + m_name + " name1=" + m_name1 + " name2=" + m_name2+" ";
+	for (const string & dev : m_devs) ret += dev + ";";
+	return ret;
 }
 
 // ===========================================================================================================
@@ -73,16 +76,21 @@ void cSensorInterrupts::gather() {
 	            CPU0       CPU1       CPU2       CPU3       CPU4       CPU5
 	               0:         46          0          0          0          0          0  IR-IO-APIC    2-edge      timer
 	*/
+	bool dbg=1;
+
 	std::ifstream thefile("/proc/interrupts");
 
 	m_info.clear();
 	m_current.clear();
 
 	size_t line_nr=1; // line number, human-numbering (starting at 1)
+
+
 	while (thefile.good()) {
 		string line;
 		std::getline( thefile , line );
 		if (thefile.fail()) break; // done
+		vector<string> devices;
 
 		if (line_nr==1) { // parse number of CPUs
 			int num=0;
@@ -117,7 +125,7 @@ void cSensorInterrupts::gather() {
 				const auto & part = matched_name_id.suffix().str();
 				std::regex expr_next_count = make_regex_C("[[:blank:]]*([[:digit:]]+)"); // get the ID
 				string str_after_id = part; // why is this needed? TODO  why can't this be const :< ?
-				// cerr << "str_after_id (in id="<<data_id<<") [" << str_after_id << "]" << endl;
+				if (dbg) cerr << "str_after_id (in id="<<data_id<<") [" << str_after_id << "]" << endl;
 				std::regex_iterator<std::string::iterator> rit(str_after_id.begin() , str_after_id.end(), expr_next_count,
 					std::regex_constants::match_continuous
 				);
@@ -163,16 +171,45 @@ void cSensorInterrupts::gather() {
 					const decltype(rit) rit_end;
 					size_t ix=0;
 					while (rit != rit_end) {
-						// cerr << "parsing names...  ix=" << ix << endl;
+						cerr << "parsing names...  ix=" << ix << endl;
 						const string value = (*rit)[1].str();
 						// cerr << "parsing names...  ix=" << ix << " is [" << value << "]" << endl;
 						names.at(ix) = std::move(value);
 						++rit;
 						++ix;
-						if (ix >= names.size()) break;
+						if ((ix == 2) && (rit->ready())) {
+							// now parse the name(s) of device(s), like:
+							// "eth1" or like "ehci_hcd:usb3, ehci_hcd:usb6, ehci_hcd:usb7"
+							//cerr << "Suffix now is: [" << string{ (*rit)[1].first , (*rit)[1].second } << "]" << endl;
+							//cerr << "Suffix now is: [" << rit->suffix() <<  "]" << endl;
+							auto pos_dev_1 = (*rit)[1].first; // end of current name
+							auto pos_dev_2 = str_after_id.end(); // end of string
+							cerr << "Device names string: [" << string{ pos_dev_1, pos_dev_2  } << "]" << endl;
+
+							// tokenize the device(s) name(s)
+							std::regex expr_next_dev = make_regex_C("[[:blank:]]*([[:graph:]^,]+),{0,1}");
+							std::regex_iterator<std::string::iterator> rit_dev( pos_dev_1, pos_dev_2 , expr_next_dev,
+								std::regex_constants::match_continuous
+							);
+							while (rit_dev != rit_end) {
+								cerr << "0=" << (*rit_dev)[0] << endl;
+								cerr << "1=" << (*rit_dev)[1] << endl;
+								//cerr << "2=" << (*rit_dev)[2] << endl;
+								devices.push_back( (*rit_dev)[1].str() );
+								++rit_dev;
+							}
+							if (dbg) {
+								cerr<<"Device(s) : ";
+								for (const string & n : devices) cerr<<n<<";";
+								cerr<<endl;
+							}
+
+							break;
+						} // last index matched
 					}
+
 					cerr << "names: 0=[" << names.at(0) << "] 1=[" << names.at(1) << "]" << endl;
-					cOneInterruptInfo one_info(data_id, names.at(0), names.at(1), "DEVICE"); // TODO
+					cOneInterruptInfo one_info(data_id, names.at(0), names.at(1), std::move(devices)); // TODO
 					m_info.push_back( std::move(one_info) );
 					cOneInterruptCounter one_interrupt(std::move(counter_per_cpu));
 					m_current.push_back( std::move(one_interrupt) );
@@ -192,7 +229,7 @@ void cSensorInterrupts::print() const {
 	assert( m_info.size() == m_current.size() );
 	for (size_t ix_inter=0; ix_inter<size_inter; ++ix_inter) {
 		cout << std::setw(4) << m_info.at(ix_inter).m_id << " ";
-		cout << m_info.at(ix_inter).get_full_name() ;
+		cout << m_info.at(ix_inter).get_full_info() ;
 		cout << endl;
 	}
 }
