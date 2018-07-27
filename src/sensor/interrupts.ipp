@@ -46,8 +46,9 @@ class cOneInterruptInfo final {
 
 		/// @}
 
+		static bool is_id_standard(const string & id_str); ///< returns true for ID like "NMI", else returns false for id like "30" and then also writes number 30 into out_id_num
 	private:
-		static bool is_id_standard(const string & id_str, int & out_id_num); ///< returns true for ID like "NMI", else returns false for id like "30" and then also writes number 30 into out_id_num
+		static bool is_id_standard_and_parse(const string & id_str, int & out_id_num); ///< returns true for ID like "NMI", else returns false for id like "30" and then also writes number 30 into out_id_num
 };
 
 #endif

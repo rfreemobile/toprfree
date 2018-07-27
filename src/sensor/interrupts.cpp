@@ -38,18 +38,18 @@ cOneInterruptCounter::cOneInterruptCounter(std::vector<cOneInterruptCounter::t_c
 
 cOneInterruptInfo::cOneInterruptInfo(const string & col0, const string & col1, const string & col2, const string & col3)
 : m_id_as_num(0), // will be overwritten possibly
-m_standard( is_id_standard(col0, this->m_id_as_num) ), // overwrite m_id_as_num, if ID is numerical
+m_standard( is_id_standard_and_parse(col0, this->m_id_as_num) ), // overwrite m_id_as_num, if ID is numerical
 m_id(col0),
-m_name1(col1),
-m_name2(col2),
+m_name1( !m_standard ? col1 : ""),
+m_name2( !m_standard ? col2 : ""),
 m_name(
 	m_standard ?
-	col3 // for "NMI" the name is "Non-maskable interrupts"
-	: (col1+" "+col2+" "+col3) // for ID e.g. 0 the name will be sum of collumns eg "IR-IO-APIC 2-edge timer"
+	"standard=" + col1 // for "NMI" the name is "Non-maskable interrupts"
+	: (col1+" "+col2+"("+col3+")") // for ID e.g. 0 the name will be sum of collumns eg "IR-IO-APIC 2-edge timer"
 )
 { }
 
-bool cOneInterruptInfo::is_id_standard(const string & id_str, int & out_id_num) { ///< returns true for ID like "NMI", false for like "30"
+bool cOneInterruptInfo::is_id_standard_and_parse(const string & id_str, int & out_id_num) { ///< returns true for ID like "NMI", false for like "30"
 	if (id_str.size()<=0) throw std::runtime_error("Empty ID of interrupt");
 	std::istringstream iss(id_str);
 	iss >> out_id_num;
@@ -57,8 +57,13 @@ bool cOneInterruptInfo::is_id_standard(const string & id_str, int & out_id_num) 
 	return true; // standard, named ID like "NMI"
 }
 
+bool cOneInterruptInfo::is_id_standard(const string & id_str) {
+	int x;
+	return is_id_standard_and_parse(id_str,x);
+}
+
 string cOneInterruptInfo::get_full_name() const {
-	return m_name + " " + m_name1 + m_name2 ; // TODO better format
+	return "name=" + m_name + " name1=" + m_name1 + " name2=" + m_name2 ; // TODO better format
 }
 
 // ===========================================================================================================
@@ -134,7 +139,7 @@ void cSensorInterrupts::gather() {
 				} // all CPUs
 				// cerr << "read " << counter_per_cpu.size() << " CPU(s) counters." << endl;
 
-				if (( last_suffix_pos >= 1 )) { // parsing per-CPU worked
+				if (( last_suffix_pos >= 1 )) { // CPUs ok, now parsing names of this interrupt
 					// assert that last_suffix_pos is < size of str_after_id
 					assert(last_suffix_pos >= 0);
 					size_t last_suffix_pos_unsigned{ static_cast<size_t>(last_suffix_pos) };
@@ -144,12 +149,18 @@ void cSensorInterrupts::gather() {
 							<< last_suffix_pos_unsigned << " should be < than " << str_after_id.size() << ".";
 						throw cSensorInterruptsError(oss.str());
 					}
+
+					std::array<std::string , 2> names;
+					if (cOneInterruptInfo::is_id_standard(data_id)) { // standard like NMI
+						// rest of the line is the one big name
+						names.at(0) = str_after_id.substr(last_suffix_pos , str_after_id.size());
+					} // standard like NMI
+
 					std::regex expr_next_name = make_regex_C("[[:blank:]]*([[:graph:]]+)"); // get the text
 					std::regex_iterator<std::string::iterator> rit(str_after_id.begin()+last_suffix_pos , str_after_id.end() , expr_next_name,
 						std::regex_constants::match_continuous
 					);
 					const decltype(rit) rit_end;
-					std::array< std::string , 3 > names; // size is always 3, starting with empty strings
 					size_t ix=0;
 					while (rit != rit_end) {
 						// cerr << "parsing names...  ix=" << ix << endl;
@@ -158,14 +169,14 @@ void cSensorInterrupts::gather() {
 						names.at(ix) = std::move(value);
 						++rit;
 						++ix;
-						if (ix >= names.size()) break; // TODO support shared interrupts
+						if (ix >= names.size()) break;
 					}
-					// cerr << "names: " << names.at(0) << ";" << names.at(1) << ";" << names.at(2) << endl;
-					cOneInterruptInfo one_info(data_id, names.at(0), names.at(1), names.at(2));
+					cerr << "names: 0=[" << names.at(0) << "] 1=[" << names.at(1) << "]" << endl;
+					cOneInterruptInfo one_info(data_id, names.at(0), names.at(1), "DEVICE"); // TODO
 					m_info.push_back( std::move(one_info) );
 					cOneInterruptCounter one_interrupt(std::move(counter_per_cpu));
 					m_current.push_back( std::move(one_interrupt) );
-				} // per-CPU worked
+				} // ok CPUs
 			} // not-ERR
 		} // non-header
 
