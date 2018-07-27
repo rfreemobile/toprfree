@@ -21,8 +21,11 @@ class cOneInterruptCounter final {
 
 		/// should not be changed from outside
 		/// @{
-		std::vector<cOneInterruptCounter::t_count> m_per_cpu_call; /// per given CPU (0-indexed): number of interrupt calls
+		std::vector<cOneInterruptCounter::t_count> m_per_cpu_call; ///< per given CPU (0-indexed): number of interrupt calls
+		cOneInterruptCounter::t_count m_sum_call; ///< sum of calls - across all CPUs
 		/// @}
+
+		void recalc_sum(); ///< call this after editing from outside values, to recalc m_sum_call
 };
 
 /// @class this data is the statis information (like name etc)

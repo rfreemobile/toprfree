@@ -12,6 +12,7 @@
 #include <sstream>
 #include <cassert>
 #include <iomanip>
+#include <numeric>
 
 cSensorInterruptsError::cSensorInterruptsError(const string & err)
 	: std::runtime_error(
@@ -31,8 +32,16 @@ unique_ptr<cSensorInterrupts> factory_cSensorInterrupts() {
 // ===========================================================================================================
 
 cOneInterruptCounter::cOneInterruptCounter(std::vector<cOneInterruptCounter::t_count> && per_cpu_call)
-: m_per_cpu_call( std::move(per_cpu_call) )
-{ }
+:
+m_per_cpu_call( std::move(per_cpu_call) )
+,m_sum_call{0}
+{
+	recalc_sum();
+}
+
+void cOneInterruptCounter::recalc_sum() {
+	m_sum_call = std::accumulate(m_per_cpu_call.begin(), m_per_cpu_call.end(), 0) ;
+};
 
 // ===========================================================================================================
 
@@ -86,17 +95,15 @@ void cSensorInterrupts::step() {
 	else {
 		for (size_t i_inter=0; i_inter < size_inter; ++i_inter) {
 			assert( m_current.at(i_inter).m_per_cpu_call.size() == this->m_num_cpu );
-
 			for (size_t i_cpu=0; i_cpu < this->m_num_cpu; ++i_cpu) {
 				auto & diff =     m_diff.at(i_inter).m_per_cpu_call.at(i_cpu);
 				auto & curr =  m_current.at(i_inter).m_per_cpu_call.at(i_cpu);
 				auto & prev = m_previous.at(i_inter).m_per_cpu_call.at(i_cpu);
-
 				diff = curr - prev;
-
 			} // all cpu-counter of interrupt
-
 		} // all interrupt
+
+		for (size_t i_inter=0; i_inter < size_inter; ++i_inter) m_diff.at(i_inter).recalc_sum();
 	} // normal step
 
 	m_previous = m_current;
@@ -278,13 +285,13 @@ void cSensorInterrupts::print() const {
 
 		bool first=1;
 		for (const auto & value : diff.m_per_cpu_call) {
-			if (first) cout << "|";
-			cout << std::setw(9) << value ;
+			if (first) cout << ":";
+			cout << std::setw(5) << value ;
 			cout << "|";
 			first=0;
 		}
 
-		cout << info.m_devs_str ;
+		cout << " " <<  info.m_devs_str ;
 		cout << endl;
 	}
 }
