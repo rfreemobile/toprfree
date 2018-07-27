@@ -77,6 +77,32 @@ string cOneInterruptInfo::make_dev_str() const {
 
 // ===========================================================================================================
 
+void cSensorInterrupts::step() {
+	size_t size_inter = m_current.size();
+
+	if (m_before_first) { // now doing first step, create the m_diff table
+		m_diff = m_current;
+	}
+	else {
+		for (size_t i_inter=0; i_inter < size_inter; ++i_inter) {
+			assert( m_current.at(i_inter).m_per_cpu_call.size() == this->m_num_cpu );
+
+			for (size_t i_cpu=0; i_cpu < this->m_num_cpu; ++i_cpu) {
+				auto & diff =     m_diff.at(i_inter).m_per_cpu_call.at(i_cpu);
+				auto & curr =  m_current.at(i_inter).m_per_cpu_call.at(i_cpu);
+				auto & prev = m_previous.at(i_inter).m_per_cpu_call.at(i_cpu);
+
+				diff = curr - prev;
+
+			} // all cpu-counter of interrupt
+
+		} // all interrupt
+	} // normal step
+
+	m_previous = m_current;
+	m_before_first = false;
+}
+
 void cSensorInterrupts::gather() {
 	/*
 	            CPU0       CPU1       CPU2       CPU3       CPU4       CPU5
@@ -199,7 +225,7 @@ void cSensorInterrupts::gather() {
 							std::regex expr_next_dev = make_regex_C("[[:blank:]]*([[:graph:]^,]+),{0,1}");
 							std::regex_iterator<std::string::iterator> rit_dev( pos_dev_1, pos_dev_2 , expr_next_dev,
 								std::regex_constants::match_continuous
-							);
+						);
 							while (rit_dev != rit_end) {
 								if (dbg) {
 									cerr << "dev match 0=" << (*rit_dev)[0] << endl;
@@ -238,14 +264,20 @@ void cSensorInterrupts::print() const {
 	cout << "CPU(s)=" << m_num_cpu << endl;
 	size_t size_inter = m_info.size();
 	assert( m_info.size() == m_current.size() );
+
+	if (m_before_first) {
+		cout << "Gathering data to compare..." << endl;
+		return;
+	}
+
 	for (size_t ix_inter=0; ix_inter<size_inter; ++ix_inter) {
-		const auto & current = m_current.at(ix_inter);
+		const auto & diff = m_diff.at(ix_inter);
 		const auto & info = m_info.at(ix_inter);
 
 		cout << std::setw(4) << info.m_id << " ";
 
 		bool first=1;
-		for (const auto & value : current.m_per_cpu_call) {
+		for (const auto & value : diff.m_per_cpu_call) {
 			if (first) cout << "|";
 			cout << std::setw(9) << value ;
 			cout << "|";
