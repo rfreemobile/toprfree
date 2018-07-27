@@ -5,6 +5,8 @@
 #include "sensor/interrupts.hpp"
 
 #include <boost/program_options.hpp>
+#include <thread>
+#include <chrono>
 
 
 class cProgram_pimpl {
@@ -32,6 +34,7 @@ cProgram::cProgram()
 
  	m_pimpl->m_boostPO_desc->add_options()
 	 	("interval", n_po::value<int>()->default_value(2000), "Interval between displaying data, in msec.")
+		("mainloops", n_po::value<int>()->default_value(5), "How many iterations of main loop to take. 0 = run forever")
  	;
 
 }
@@ -43,9 +46,22 @@ void cProgram::options(const int argc, const char * const * argv) {
 }
 
 void cProgram::run() {
-	cout << "Running the program. Interval time is: " << m_pimpl->m_argm["interval"].as<int>() << "." << endl;
+	int sleep_time_ms = m_pimpl->m_argm["interval"].as<int>();
+	int mainloops = m_pimpl->m_argm["mainloops"].as<int>();
+	cout << "Running the program. Interval time is: " << sleep_time_ms << "." << endl;
 
-	m_pimpl->m_sensor_interrupts->gather();
+	bool exit_program=0;
+	long int loop_counter=0;
+	while (!exit_program) {
+		++loop_counter;
+
+		m_pimpl->m_sensor_interrupts->gather();
+		m_pimpl->m_sensor_interrupts->print();
+		std::this_thread::sleep_for( std::chrono::milliseconds( sleep_time_ms  ));
+		m_pimpl->m_sensor_interrupts->step();
+
+		if ((mainloops!=0) && (loop_counter >= mainloops)) exit_program=1;
+	}
 }
 
 cProgram::~cProgram() { }
