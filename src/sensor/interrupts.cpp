@@ -100,8 +100,9 @@ string cOneInterruptInfo::make_dev_str() const {
 
 void cSensorInterrupts::calc_stats() {
 	if (m_before_first) { // now doing first step, create the m_diff table
-		// cerr << "calc: before first..." << endl;
-		m_diff = m_current;
+		// just allocating to have correct size of arrays
+		m_diff_ival = m_current;
+		m_diff_sec = m_current;
 	}
 	else {
 		// cerr << "calc: normal" << endl;
@@ -109,20 +110,35 @@ void cSensorInterrupts::calc_stats() {
 		for (size_t i_inter=0; i_inter < size_inter; ++i_inter) {
 			assert( m_current.at(i_inter).m_per_cpu_call.size() == this->m_num_cpu );
 			for (size_t i_cpu=0; i_cpu < this->m_num_cpu; ++i_cpu) {
-				auto & diff =     m_diff.at(i_inter).m_per_cpu_call.at(i_cpu);
+				auto & diff =  m_diff_ival.at(i_inter).m_per_cpu_call.at(i_cpu);
 				auto & curr =  m_current.at(i_inter).m_per_cpu_call.at(i_cpu);
 				auto & prev = m_previous.at(i_inter).m_per_cpu_call.at(i_cpu);
 				diff = curr - prev;
 			} // all cpu-counter of interrupt
 		} // all interrupt
+		for (size_t i_inter=0; i_inter < size_inter; ++i_inter) m_diff_ival.at(i_inter).recalc_sum();
 
-		for (size_t i_inter=0; i_inter < size_inter; ++i_inter) m_diff.at(i_inter).recalc_sum();
+		m_timediff_current = m_time_current - m_time_previous; // e.g. 2 seconds
+		double ratio = std::chrono::seconds(1) / m_timediff_current; // e.g. (1 second / 2 seconds) = 0.5 ratio
+		// cerr << "\nratio=" << ratio << "\n" << endl;
+
+		for (size_t i_inter=0; i_inter < size_inter; ++i_inter) {
+			assert( m_current.at(i_inter).m_per_cpu_call.size() == this->m_num_cpu );
+			for (size_t i_cpu=0; i_cpu < this->m_num_cpu; ++i_cpu) {
+				auto & diff_ival =  m_diff_ival.at(i_inter).m_per_cpu_call.at(i_cpu);
+				auto & diff_sec  =  m_diff_sec .at(i_inter).m_per_cpu_call.at(i_cpu);
+				diff_sec = diff_ival * ratio;
+			} // all cpu-counter of interrupt
+		} // all interrupt
+		for (size_t i_inter=0; i_inter < size_inter; ++i_inter) m_diff_sec.at(i_inter).recalc_sum();
+
 	} // normal calc
 }
 
 void cSensorInterrupts::step() {
 	// cerr << "Step... " << endl;
 	m_previous = m_current;
+	m_time_previous = m_time_current;
 	m_before_first = false;
 }
 
@@ -140,6 +156,8 @@ void cSensorInterrupts::gather() {
 	m_current.clear();
 
 	size_t line_nr=1; // line number, human-numbering (starting at 1)
+
+	m_time_current = cSensor::t_clock::now(); // <--- time
 
 	while (thefile.good()) {
 		string line;
@@ -294,16 +312,19 @@ void cSensorInterrupts::print() const {
 	}
 
 	int wid_id = 5;
+	int wid_unit = 4;
 	int wid_sum = 5;
 	int wid_cpu = wid_sum;
 
 	cout << std::setw(wid_id) << "Inter" << " :" ;
+	cout << std::setw(wid_unit) << "Unit" << " " ;
 	cout << std::setw(wid_sum) << "Sum" << ":" ;
 	for (size_t ix_cpu=0; ix_cpu<size_cpu; ++ix_cpu) cout << std::setw(wid_cpu) << ix_cpu << "|";
 	cout << "Device";
 	cout << endl;
 
 	cout << string(wid_id,'-') << " :" ;
+	cout << string(wid_unit,'-') << " " ;
 	cout << string(wid_sum,'-') << ":" ;
 	for (size_t ix_cpu=0; ix_cpu<size_cpu; ++ix_cpu) cout << string(wid_cpu,'-') << "|";
 	cout << string(5,'-');
@@ -312,7 +333,7 @@ void cSensorInterrupts::print() const {
 	size_t count_hidden{0};
 
 	for (size_t ix_inter=0; ix_inter<size_inter; ++ix_inter) {
-		const auto & diff = m_diff.at(ix_inter);
+		const auto & diff = m_diff_sec.at(ix_inter);
 		const auto & info = m_info.at(ix_inter);
 
 		bool show=true;
@@ -324,6 +345,9 @@ void cSensorInterrupts::print() const {
 
 		cout << std::setw(wid_id) << info.m_id << " ";
 		cout << ":";
+
+		cout << std::setw(wid_unit) << "e/s";
+		cout << " ";
 
 		cout << std::setw(wid_sum) << diff.m_sum_call ;
 		cout << ":" ;
