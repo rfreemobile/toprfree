@@ -52,7 +52,7 @@ m_per_cpu_call( std::move(per_cpu_call) )
 
 void cOneInterruptCounter::recalc_sum() {
 	m_sum_call = std::accumulate(m_per_cpu_call.begin(), m_per_cpu_call.end(), 0) ;
-};
+}
 
 // ===========================================================================================================
 
