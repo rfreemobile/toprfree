@@ -20,6 +20,7 @@ if(WIN32 OR CYGWIN)
 	add_definitions(-DNOMINMAX)
 endif()
 
+
 ########################### BOOST ###########################
 ### boost - part 1 - just check version and decide does it affect our flags
 set (Boost_USE_MULTITHREADED ON)
@@ -197,6 +198,7 @@ set(LIBS_COMMON
 	${PTHREAD_LIB}
 	${LIB_OPTIONAL_CAPNG}
 	${MINGW_LIBRARIES} ${MSVC_LIRARIES}
+	ncurses
 )
 
 target_link_libraries(toprfree

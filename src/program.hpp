@@ -13,6 +13,7 @@ class cProgram {
 		virtual ~cProgram();
 
 		virtual void options(const int argc, const char * const * argv);
+		virtual void early_startup();
 		virtual void run();
 
 	private:

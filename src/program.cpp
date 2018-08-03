@@ -8,6 +8,8 @@
 #include <thread>
 #include <chrono>
 
+#include <ncurses.h>
+
 
 class cProgram_pimpl {
 	public:
@@ -46,6 +48,15 @@ void cProgram::options(const int argc, const char * const * argv) {
 	n_po::store(n_po::parse_command_line(argc, argv, *(m_pimpl->m_boostPO_desc)) , m_pimpl->m_argm);
 }
 
+void early_startup() {
+	initscr();
+	clear();
+
+	noecho();
+	cbreak();
+	timeout(0);
+}
+
 void cProgram::run() {
 	int sleep_time_ms = m_pimpl->m_argm["interval"].as<int>();
 	int mainloops = m_pimpl->m_argm["mainloops"].as<int>();
@@ -68,6 +79,8 @@ void cProgram::run() {
 		m_pimpl->m_sensor_interrupts->step();
 
 		if ((mainloops!=0) && (loop_counter >= mainloops)) exit_program=1;
+		int key=getch();
+		if (key == 'z') exit_program=1;
 	}
 }
 
