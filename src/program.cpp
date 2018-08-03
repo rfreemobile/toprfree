@@ -48,7 +48,7 @@ void cProgram::options(const int argc, const char * const * argv) {
 	n_po::store(n_po::parse_command_line(argc, argv, *(m_pimpl->m_boostPO_desc)) , m_pimpl->m_argm);
 }
 
-void early_startup() {
+void cProgram::early_startup() {
 	initscr();
 	clear();
 
