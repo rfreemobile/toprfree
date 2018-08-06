@@ -15,6 +15,7 @@ class cUiNcurses_impl_deleter { public: void operator()(cUiNcurses_impl *p) cons
 
 class cUiNcurses : public cUiBase {
 	public:
+		cUiNcurses();
 		virtual ~cUiNcurses()=default;
 
 		virtual void init();

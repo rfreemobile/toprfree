@@ -12,12 +12,12 @@
 
 
 /// based on https://stackoverflow.com/questions/772355/how-to-inherit-from-stdostream
-MyBuffer::MyBuffer()
+cNcursesStreamBuf::cNcursesStreamBuf()
 	{
 		setp(buf, buf + BUF_SIZE);
 	}
 
-int MyBuffer::overflow(int c)
+int cNcursesStreamBuf::overflow(int c)
 	{
 		// Handle output
 		putChars(pbase(), pptr());
@@ -31,33 +31,31 @@ int MyBuffer::overflow(int c)
 		return c;
 	}
 
-	int MyBuffer::sync(void)
+	int cNcursesStreamBuf::sync(void)
 	{
 		// Handle output
 		putChars(pbase(), pptr());
 		// This tells that buffer is empty again
 		setp(buf, buf + BUF_SIZE);
+		refresh(); /// <--- ncurses
 		return 0;
 	}
 
-	void MyBuffer::putChars(const char* begin, const char* end) {
+	void cNcursesStreamBuf::putChars(const char* begin, const char* end) {
 		if (begin==end) return;
 		if ( ! ( std::less<const char*>()(begin,end) )) throw std::runtime_error("invalid buffer in putChars");
 		std::size_t diff = end-begin; // not using std::ptrdiff_t , because size_t has wider range, and we know result will be positive
 		assert(diff>=1); // double checking
 
 		// will it fit into "int" for addnstr?
-		if ( ! ( diff > std::numeric_limits<int>::max()  ) ) throw std::runtime_error("too long buffer in putChars");
+		if ( ! ( diff < std::numeric_limits<int>::max()  ) ) throw std::runtime_error("too long buffer in putChars");
 		int len { static_cast<int>( diff ) };
 
-		addnstr(begin, len);
-		for (const char* c = begin; c < end; c++){
-			std::cout << *c;
-		}
+		addnstr(begin, len); // <--- ncurses write
 	}
 
 /// based on https://stackoverflow.com/questions/772355/how-to-inherit-from-stdostream
-	MyOStream::MyOStream() :
+	cNcursesOStream::cNcursesOStream() :
 	std::basic_ostream< char, std::char_traits< char > >(&buf),
 	buf()
 	{

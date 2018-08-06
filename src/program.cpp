@@ -104,19 +104,21 @@ void cProgram::run() {
 	int mainloops = m_pimpl->m_argm["mainloops"].as<int>();
 	m_pimpl->m_sensor_interrupts->m_options.m_showifsum = m_pimpl->m_argm["showifsum"].as<long int>();
 
-	cout << "Running the program. Interval time is: " << sleep_time_ms << "." << endl;
+	(m_pimpl->m_ui->write()) << "Running the program. Interval time is: " << sleep_time_ms << "." << endl;
+
+	refresh();
+	std::this_thread::sleep_for( std::chrono::seconds(4));
+	throw std::runtime_error("test exit 1");
 
 	bool exit_program=0;
 	long int loop_counter=0;
 	while (!exit_program) {
 		++loop_counter;
-		// cerr << "------- loop " << endl;
 
 		m_pimpl->m_sensor_interrupts->gather();
 		m_pimpl->m_sensor_interrupts->calc_stats();
 		m_pimpl->m_sensor_interrupts->print();
 
-		// cerr << "Sleep... " << endl;
 		std::this_thread::sleep_for( std::chrono::milliseconds( sleep_time_ms  ));
 		m_pimpl->m_sensor_interrupts->step();
 

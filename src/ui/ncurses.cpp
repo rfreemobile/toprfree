@@ -9,12 +9,18 @@ namespace nToprfree {
 
 class cUiNcurses_impl {
 	public:
-		MyOStream m_stream;
+		cNcursesOStream m_stream;
 };
 
 void cUiNcurses_impl_deleter::operator()(cUiNcurses_impl *p) const { delete p; }
 
+cUiNcurses::cUiNcurses()
+	: m_impl( new cUiNcurses_impl )
+{ }
+
 void cUiNcurses::init() {
+	std::cout << "Starting ncurses..." << std::endl;
+
 	initscr();
 	start_color();
 	// bool has_col = has_colors();
@@ -33,6 +39,9 @@ void cUiNcurses::init() {
 	}
 	// auto make_txt_col = [](short f, short b) -> short { return COLOR_PAIR( f + b*8 ); } ;
 	// bool has_col = has_colors();
+
+	addstr("Ncurses started.\n");
+	refresh();
 }
 
 void cUiNcurses::start_frame() {
@@ -40,7 +49,7 @@ void cUiNcurses::start_frame() {
 }
 
 std::ostream& cUiNcurses::write() {
-	throw std::runtime_error("not implemented");
+	return m_impl->m_stream;
 }
 
 void cUiNcurses::finish_frame() {

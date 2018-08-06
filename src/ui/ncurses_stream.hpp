@@ -12,10 +12,10 @@
 #include <iostream>
 
 
-class MyBuffer : public std::basic_streambuf<char, std::char_traits<char> >
+class cNcursesStreamBuf : public std::basic_streambuf<char, std::char_traits<char> >
 {
 public:
-	MyBuffer();
+	cNcursesStreamBuf();
 
 protected:
 	// This is called when buffer becomes full. If
@@ -32,7 +32,7 @@ private:
 	typedef std::char_traits<char> Traits;
 
 	// Work in buffer mode. It is also possible to work without buffer.
-	static const size_t BUF_SIZE = 64;
+	static const size_t BUF_SIZE = 5;
 	char buf[BUF_SIZE];
 
 	// This is the example userdata
@@ -44,14 +44,14 @@ private:
 
 
 /// based on https://stackoverflow.com/questions/772355/how-to-inherit-from-stdostream
-class MyOStream : public std::basic_ostream< char, std::char_traits< char > >
+class cNcursesOStream : public std::basic_ostream< char, std::char_traits< char > >
 {
 
 public:
-	MyOStream();
+	cNcursesOStream();
 
 private:
-	MyBuffer buf;
+	cNcursesStreamBuf buf;
 
 };
 
