@@ -9,6 +9,7 @@
 #include <chrono>
 
 #include <ncurses.h>
+#include <sstream>
 
 
 class cProgram_pimpl {
@@ -50,11 +51,62 @@ void cProgram::options(const int argc, const char * const * argv) {
 
 void cProgram::early_startup() {
 	initscr();
+	bool has_col = has_colors();
+	if (has_col) {
+		start_color();
+	}
+
 	clear();
 
 	noecho();
 	cbreak();
 	timeout(0);
+	curs_set(0); // invisible
+
+	for (short f=0; f<8; ++f) {
+		for (short b=0; b<8; ++b) {
+			init_pair(f+b*8,f,b);
+		}
+	}
+	auto make_txt_col = [](short f, short b) -> short { return COLOR_PAIR( f + b*8 ); } ;
+
+	long mmm=1000;
+	for (int iii=0; iii<mmm; ++iii) {
+		clear();
+		float t = iii/100.0;
+		float rr = 5 + iii/mmm*20;
+
+		move(25 + sin(t*10)*rr/2, 40 + cos(t*10)*rr/2);
+		addstr("X");
+
+		move(25 + sin(t)*rr , 40 + cos(t)*rr);
+		addstr("*rotfl");
+		attron(A_BOLD);
+		addstr("lol");
+		attroff(A_BOLD);
+
+		attron( make_txt_col(COLOR_RED, COLOR_BLUE) );
+		addstr("foo");
+		attroff( make_txt_col(COLOR_RED, COLOR_BLUE) );
+
+		addstr("\n1\n2\n3.....press 'z' to exit.");
+
+		std::ostringstream oss;
+		oss << " colors=" << COLORS << " pairs=" << COLOR_PAIRS ;
+		addstr(oss.str().c_str());
+
+		string s(iii,'-');
+		addstr(s.c_str());
+		refresh();
+		std::this_thread::sleep_for( std::chrono::milliseconds(10) );
+
+		int keyb = getch();
+		if (keyb == 'z') break;
+	}
+
+	endwin();
+
+	throw std::runtime_error("test exit"); // XXX
 }
 
 void cProgram::run() {
