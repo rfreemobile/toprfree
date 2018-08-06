@@ -1,62 +1,33 @@
+#ifndef INCLUDE_rfreetop_ui_ncurses_stream
+#define INCLUDE_rfreetop_ui_ncurses_stream
+
+/**
+ * @file Provide facility like std::cout, but for ncurses, and with attributed including colors - just for 1 window (main screen)
+ * Idea from https://stackoverflow.com/questions/772355/how-to-inherit-from-stdostream
+ * Other idea, NOT USED HERE, was in https://stackoverflow.com/questions/20126649/ncurses-and-ostream-class-method
+ **/
 
 #include <streambuf>
 #include <ostream>
 #include <iostream>
 
 
-/// based on https://stackoverflow.com/questions/772355/how-to-inherit-from-stdostream
-class MyData
-{
-	//example data class, not used
-};
-
 class MyBuffer : public std::basic_streambuf<char, std::char_traits<char> >
 {
-
 public:
-
-	inline MyBuffer(MyData data) :
-	data(data)
-	{
-		setp(buf, buf + BUF_SIZE);
-	}
+	MyBuffer();
 
 protected:
-
 	// This is called when buffer becomes full. If
 	// buffer is not used, then this is called every
 	// time when characters are put to stream.
-	inline virtual int overflow(int c = Traits::eof())
-	{
-#ifdef DEBUG
-		std::cout << "(over)";
-#endif
-		// Handle output
-		putChars(pbase(), pptr());
-		if (c != Traits::eof()) {
-			char c2 = c;
-			// Handle the one character that didn't fit to buffer
-			putChars(&c2, &c2 + 1);
-		}
-		// This tells that buffer is empty again
-		setp(buf, buf + BUF_SIZE);
-		
-		return c;
-	}
+	virtual int overflow(int c = Traits::eof());
 
 	// This function is called when stream is flushed,
 	// for example when std::endl is put to stream.
-	inline virtual int sync(void)
-	{
-		// Handle output
-		putChars(pbase(), pptr());
-		// This tells that buffer is empty again
-		setp(buf, buf + BUF_SIZE);
-		return 0;
-	}
+	virtual int sync(void);
 
 private:
-
 	// For EOF detection
 	typedef std::char_traits<char> Traits;
 
@@ -65,20 +36,10 @@ private:
 	char buf[BUF_SIZE];
 
 	// This is the example userdata
-	MyData data;
+	// ... data here ...
 
 	// In this function, the characters are parsed.
-	inline void putChars(const char* begin, const char* end){
-#ifdef DEBUG
-		std::cout << "(putChars(" << static_cast<const void*>(begin) <<
-		    "," << static_cast<const void*>(end) << "))";
-#endif
-		//just print to stdout for now
-		for (const char* c = begin; c < end; c++){
-			std::cout << *c;
-		}
-	}
-
+	void putChars(const char* begin, const char* end);
 };
 
 
@@ -87,30 +48,12 @@ class MyOStream : public std::basic_ostream< char, std::char_traits< char > >
 {
 
 public:
-
-	inline MyOStream(MyData data) :
-	std::basic_ostream< char, std::char_traits< char > >(&buf),
-	buf(data)
-	{
-	}
+	MyOStream();
 
 private:
-
 	MyBuffer buf;
 
 };
 
-int main(void)
-{
-	MyData data;
-	MyOStream o(data);
-	
-	for (int i = 0; i < 8; i++)
-		o << "hello world! ";
-	
-	o << std::endl;
-	
-	return 0;
-}
-
+#endif
 

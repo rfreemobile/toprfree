@@ -1,36 +1,24 @@
 
+#include "ui/ncurses_stream.hpp"
+
 #include <streambuf>
 #include <ostream>
 #include <iostream>
+#include <cassert>
+#include <cstddef>
+#include <limits>
+
+#include <ncurses.h>
 
 
 /// based on https://stackoverflow.com/questions/772355/how-to-inherit-from-stdostream
-class MyData
-{
-	//example data class, not used
-};
-
-class MyBuffer : public std::basic_streambuf<char, std::char_traits<char> >
-{
-
-public:
-
-	inline MyBuffer(MyData data) :
-	data(data)
+MyBuffer::MyBuffer()
 	{
 		setp(buf, buf + BUF_SIZE);
 	}
 
-protected:
-
-	// This is called when buffer becomes full. If
-	// buffer is not used, then this is called every
-	// time when characters are put to stream.
-	inline virtual int overflow(int c = Traits::eof())
+int MyBuffer::overflow(int c)
 	{
-#ifdef DEBUG
-		std::cout << "(over)";
-#endif
 		// Handle output
 		putChars(pbase(), pptr());
 		if (c != Traits::eof()) {
@@ -40,13 +28,10 @@ protected:
 		}
 		// This tells that buffer is empty again
 		setp(buf, buf + BUF_SIZE);
-		
 		return c;
 	}
 
-	// This function is called when stream is flushed,
-	// for example when std::endl is put to stream.
-	inline virtual int sync(void)
+	int MyBuffer::sync(void)
 	{
 		// Handle output
 		putChars(pbase(), pptr());
@@ -55,48 +40,26 @@ protected:
 		return 0;
 	}
 
-private:
+	void MyBuffer::putChars(const char* begin, const char* end) {
+		if (begin==end) return;
+		if ( ! ( std::less<const char*>()(begin,end) )) throw std::runtime_error("invalid buffer in putChars");
+		std::size_t diff = end-begin; // not using std::ptrdiff_t , because size_t has wider range, and we know result will be positive
+		assert(diff>=1); // double checking
 
-	// In this function, the characters are parsed.
-	inline void putChars(const char* begin, const char* end){
-#ifdef DEBUG
-		std::cout << "(putChars(" << static_cast<const void*>(begin) <<
-		    "," << static_cast<const void*>(end) << "))";
-#endif
-		//just print to stdout for now
+		// will it fit into "int" for addnstr?
+		if ( ! ( diff > std::numeric_limits<int>::max()  ) ) throw std::runtime_error("too long buffer in putChars");
+		int len { static_cast<int>( diff ) };
+
+		addnstr(begin, len);
 		for (const char* c = begin; c < end; c++){
 			std::cout << *c;
 		}
 	}
 
-};
-
-
 /// based on https://stackoverflow.com/questions/772355/how-to-inherit-from-stdostream
-class MyOStream : public std::basic_ostream< char, std::char_traits< char > >
-{
-
-public:
-
-	inline MyOStream(MyData data) :
+	MyOStream::MyOStream() :
 	std::basic_ostream< char, std::char_traits< char > >(&buf),
-	buf(data)
+	buf()
 	{
 	}
-
-};
-
-int main(void)
-{
-	MyData data;
-	MyOStream o(data);
-	
-	for (int i = 0; i < 8; i++)
-		o << "hello world! ";
-	
-	o << std::endl;
-	
-	return 0;
-}
-
 
