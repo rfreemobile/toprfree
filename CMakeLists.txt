@@ -166,7 +166,7 @@ include_directories( src/ )
 file(GLOB SOURCES_GROUP_MAINPROGRAM src/*
 	src/sensor/*
 	src/mylib/*
-	src/myui/*
+	src/ui/*
 )
 # ^-- TODO perhaps separate mylib a bit?
 
