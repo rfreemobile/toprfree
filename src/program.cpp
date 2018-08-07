@@ -43,7 +43,7 @@ cProgram::cProgram()
 
  	m_pimpl->m_boostPO_desc->add_options()
 	 	("interval", n_po::value<int>()->default_value(2000), "Interval between displaying data, in msec.")
-		("mainloops", n_po::value<int>()->default_value(5), "How many iterations of main loop to take. 0 = run forever")
+		("mainloops", n_po::value<int>()->default_value(0), "How many iterations of main loop to take. 0 = run forever")
 		("showifsum", n_po::value<long int>()->default_value(1), "Show only interrupts with this or more events Sum.")
  	;
 
@@ -56,74 +56,41 @@ void cProgram::options(const int argc, const char * const * argv) {
 }
 
 void cProgram::early_startup() {
+	assert(m_pimpl->m_ui);
 }
-
-/*
-	long mmm=1000;
-	for (int iii=0; iii<mmm; ++iii) {
-		clear();
-		float t = iii/100.0;
-		float rr = 5 + iii/mmm*20;
-
-		move(25 + sin(t*10)*rr/2, 40 + cos(t*10)*rr/2);
-		addstr("X");
-
-		move(25 + sin(t)*rr , 40 + cos(t)*rr);
-		addstr("*rotfl");
-		attron(A_BOLD);
-		addstr("lol");
-		attroff(A_BOLD);
-
-		attron( make_txt_col(COLOR_RED, COLOR_BLUE) );
-		addstr("foo");
-		attroff( make_txt_col(COLOR_RED, COLOR_BLUE) );
-
-		addstr("\n1\n2\n3.....press 'z' to exit.");
-
-		std::ostringstream oss;
-		oss << " colors=" << COLORS << " pairs=" << COLOR_PAIRS ;
-		addstr(oss.str().c_str());
-
-		string s(iii,'-');
-		addstr(s.c_str());
-		refresh();
-		std::this_thread::sleep_for( std::chrono::milliseconds(10) );
-
-		int keyb = getch();
-		if (keyb == 'z') break;
-	}
-
-	endwin();
-
-	throw std::runtime_error("test exit"); // XXX
-}
-*/
 
 void cProgram::run() {
-	int sleep_time_ms = m_pimpl->m_argm["interval"].as<int>();
-	int mainloops = m_pimpl->m_argm["mainloops"].as<int>();
+	long mainloop_time_ms = m_pimpl->m_argm["interval"].as<int>();
+	long mainloops = m_pimpl->m_argm["mainloops"].as<int>();
 	m_pimpl->m_sensor_interrupts->m_options.m_showifsum = m_pimpl->m_argm["showifsum"].as<long int>();
 
-	(m_pimpl->m_ui->write()) << "Running the program. Interval time is: " << sleep_time_ms << "." << endl;
-
-	refresh();
-	std::this_thread::sleep_for( std::chrono::seconds(4));
-	throw std::runtime_error("test exit 1");
+	(m_pimpl->m_ui->write()) << "Running the program. Interval time is: " << mainloop_time_ms << "." << endl;
 
 	bool exit_program=0;
 	long int loop_counter=0;
 	while (!exit_program) {
 		++loop_counter;
 
+		m_pimpl->m_ui->start_frame();
 		m_pimpl->m_sensor_interrupts->gather();
 		m_pimpl->m_sensor_interrupts->calc_stats();
-		m_pimpl->m_sensor_interrupts->print();
-
-		std::this_thread::sleep_for( std::chrono::milliseconds( sleep_time_ms  ));
+		m_pimpl->m_sensor_interrupts->print( m_pimpl->m_ui );
+		m_pimpl->m_ui->finish_frame();
 		m_pimpl->m_sensor_interrupts->step();
 
+		int key=-1;
+		{
+			const long sleep_parts=10;
+			for (long sleep_i=0; sleep_i<sleep_parts; ++sleep_i) {
+				long sleep_now = mainloop_time_ms / sleep_parts;
+				if (sleep_now < 1) sleep_now = 1;
+				std::this_thread::sleep_for( std::chrono::milliseconds( sleep_now ) );
+				key = m_pimpl->m_ui->get_key();
+				if (key != -1) break;
+			}
+		}
+
 		if ((mainloops!=0) && (loop_counter >= mainloops)) exit_program=1;
-		int key=getch();
 		if (key == 'z') exit_program=1;
 	}
 }

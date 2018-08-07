@@ -300,7 +300,7 @@ void cSensorInterrupts::gather() {
 	if (line_nr<=1) throw cSensorInterruptsError("No interrupt info could be read.");
 }
 
-void cSensorInterrupts::print() const {
+void cSensorInterrupts::print( shared_ptr<nToprfree::cUiBase> ui ) const {
 	cout << "CPU(s)=" << m_num_cpu << endl;
 	size_t size_inter = m_info.size();
 	size_t size_cpu = this->m_num_cpu;
@@ -316,19 +316,22 @@ void cSensorInterrupts::print() const {
 	int wid_sum = 5;
 	int wid_cpu = wid_sum;
 
-	cout << std::setw(wid_id) << "Inter" << " :" ;
-	cout << std::setw(wid_unit) << "Unit" << " " ;
-	cout << std::setw(wid_sum) << "Sum" << ":" ;
-	for (size_t ix_cpu=0; ix_cpu<size_cpu; ++ix_cpu) cout << std::setw(wid_cpu) << ix_cpu << "|";
-	cout << "Device";
-	cout << endl;
+	auto ui_pin = ui; // pin sharedptr
+	auto & out = ui_pin->write();
 
-	cout << string(wid_id,'-') << " :" ;
-	cout << string(wid_unit,'-') << " " ;
-	cout << string(wid_sum,'-') << ":" ;
-	for (size_t ix_cpu=0; ix_cpu<size_cpu; ++ix_cpu) cout << string(wid_cpu,'-') << "|";
-	cout << string(5,'-');
-	cout << endl;
+	out << std::setw(wid_id) << "Inter" << " :" ;
+	out << std::setw(wid_unit) << "Unit" << " " ;
+	out << std::setw(wid_sum) << "Sum" << ":" ;
+	for (size_t ix_cpu=0; ix_cpu<size_cpu; ++ix_cpu) out << std::setw(wid_cpu) << ix_cpu << "|";
+	out << "Device";
+	out << endl;
+
+	out << string(wid_id,'-') << " :" ;
+	out << string(wid_unit,'-') << " " ;
+	out << string(wid_sum,'-') << ":" ;
+	for (size_t ix_cpu=0; ix_cpu<size_cpu; ++ix_cpu) out << string(wid_cpu,'-') << "|";
+	out << string(5,'-');
+	out << endl;
 
 	size_t count_hidden{0};
 
@@ -343,14 +346,14 @@ void cSensorInterrupts::print() const {
 			continue;
 		}
 
-		cout << std::setw(wid_id) << info.m_id << " ";
-		cout << ":";
+		out << std::setw(wid_id) << info.m_id << " ";
+		out << ":";
 
-		cout << std::setw(wid_unit) << "e/s";
-		cout << " ";
+		out << std::setw(wid_unit) << "e/s";
+		out << " ";
 
-		cout << std::setw(wid_sum) << diff.m_sum_call ;
-		cout << ":" ;
+		out << std::setw(wid_sum) << diff.m_sum_call ;
+		out << ":" ;
 
 		for (const auto & value : diff.m_per_cpu_call) {
 			// 123
@@ -359,20 +362,20 @@ void cSensorInterrupts::print() const {
 			// 1M
 			// 123 M
 			// 5 char wide max (TODO)
-			cout << std::setw(wid_cpu) << value ;
-			cout << "|";
+			out << std::setw(wid_cpu) << value ;
+			out << "|";
 		}
-		cout << " ";
-		if (! info.m_standard) cout << info.m_devs_str ;
-		else cout << "(" << info.m_name << ")";
-		cout << endl;
+		out << " ";
+		if (! info.m_standard) out << info.m_devs_str ;
+		else out << "(" << info.m_name << ")";
+		out << endl;
 	}
 	if (count_hidden==0) {
-		cout << "(All interrupts are displayed)" << endl;
+		out << "(All interrupts are displayed)" << endl;
 	} else {
-		cout << "(" << count_hidden << " interrupt(s) are hidden due to options)" << endl;
+		out << "(" << count_hidden << " interrupt(s) are hidden due to options)" << endl;
 	}
-	cout<<endl;
+	out<<endl;
 }
 
 
