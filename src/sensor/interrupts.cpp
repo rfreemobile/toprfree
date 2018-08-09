@@ -16,8 +16,8 @@
 #include <iomanip>
 #include <numeric>
 
-#include "pfp_ncurses.hpp" // e.g. for colors etc
-#include "ui/ncurses_stream.hpp" // for manips etc
+#include "pfp-local/pfp_ncurses.hpp" // e.g. for colors maker
+#include "pfp-local/pfp_ncurses_stream_manip.hpp" // e.g. for colors/attrs
 
 // ===========================================================================================================
 

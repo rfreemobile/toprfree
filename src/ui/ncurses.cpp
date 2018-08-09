@@ -1,7 +1,8 @@
 
 #include "ui/ncurses.hpp"
 
-#include "ui/ncurses_stream.hpp"
+#include "pfp-local/pfp_ncurses_stream.hpp"
+#include "pfp-local/pfp_ncurses_stream_manip.hpp"
 
 #include <ncurses.h> // TODO remove this direct lib, use pfp_ wrapper
 
@@ -12,6 +13,7 @@ namespace nToprfree {
 class cUiNcurses_impl {
 	public:
 		cNcursesOStream m_stream;
+		nPfp_ncurses::cPairMaker m_pair_maker;
 };
 
 void cUiNcurses_impl_deleter::operator()(cUiNcurses_impl *p) const { delete p; }
@@ -38,7 +40,7 @@ void cUiNcurses::init() {
 
 	m_impl->m_stream.refresh_on_sync(false);
 
-	m_pair_maker = nPfp_ncurses::cPairMaker::singleton();
+	m_impl->m_pair_maker = nPfp_ncurses::cPairMaker::singleton();
 
 	addstr("Ncurses started.\n");
 	refresh();

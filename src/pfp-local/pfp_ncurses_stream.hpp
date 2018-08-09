@@ -1,5 +1,5 @@
-#ifndef INCLUDE_rfreetop_ui_ncurses_stream
-#define INCLUDE_rfreetop_ui_ncurses_stream
+#ifndef INCLUDE_pfp_ncurses_stream
+#define INCLUDE_pfp_ncurses_stream
 
 /**
  * @file Provide facility like std::cout, but for ncurses, and with attributed including colors - just for 1 window (main screen)
@@ -48,18 +48,10 @@ private:
 
 class cNcursesOStream;
 
-class cNcursesManip {
-	public:
-		~cNcursesManip()=default;
-};
+// ===========================================================================================================
 
-class cNcursesManipCol : public cNcursesManip {
-	public:
-		~cNcursesManipCol()=default;
-		cNcursesManipCol(short m_fg_, short m_bg_);
-		short m_pair; ///< the ncurses color-pair number
-};
-std::ostream & operator<<(std::ostream & ostream , cNcursesManipCol attr);
+// manipulators that the Stream knows about and can apply:
+class cNcursesManipCol;
 
 /// based on https://stackoverflow.com/questions/772355/how-to-inherit-from-stdostream
 class cNcursesOStream : public std::basic_ostream< char, std::char_traits< char > >
@@ -70,7 +62,7 @@ public:
 
 	virtual void refresh_on_sync(bool enable); ///< set whether the sync() e.g. caused by endl, will result in ncurses refresh of screen
 
-	virtual void apply(cNcursesManipCol attr);
+	virtual void apply(cNcursesManipCol & attr);
 
 private:
 	cNcursesStreamBuf buf;

@@ -28,8 +28,6 @@ class cUiNcurses : public cUiBase {
 
 	protected:
 		std::unique_ptr<cUiNcurses_impl, cUiNcurses_impl_deleter> m_impl;
-
-		nPfp_ncurses::cPairMaker m_pair_maker;
 };
 
 };
