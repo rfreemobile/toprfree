@@ -82,6 +82,12 @@ void cNcursesOStream::apply(cNcursesManipCol attr) {
 	attron( COLOR_PAIR(attr.m_pair)  ); // <--- ncurses
 }
 
+// ===========================================================================================================
+
+cNcursesManipCol::cNcursesManipCol(short m_fg_, short m_bg_)
+: m_pair( COLOR_PAIR(m_fg_ , m_bg_)
+{ }
+
 
 // ===========================================================================================================
 

@@ -169,6 +169,7 @@ file(GLOB SOURCES_GROUP_MAINPROGRAM src/*
 	src/sensor/*
 	src/mylib/*
 	src/ui/*
+	src/pfp-local/*
 )
 # ^-- TODO perhaps separate mylib a bit?
 

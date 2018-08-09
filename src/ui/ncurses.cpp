@@ -5,6 +5,8 @@
 
 #include <ncurses.h> // TODO remove this direct lib, use pfp_ wrapper
 
+#include "pfp-local/pfp_ncurses.hpp"
+
 namespace nToprfree {
 
 class cUiNcurses_impl {
@@ -36,13 +38,7 @@ void cUiNcurses::init() {
 
 	m_impl->m_stream.refresh_on_sync(false);
 
-	for (short f=0; f<8; ++f) {
-		for (short b=0; b<8; ++b) {
-			init_pair(f+b*8,f,b);
-		}
-	}
-	// auto make_txt_col = [](short f, short b) -> short { return COLOR_PAIR( f + b*8 ); } ;
-	// bool has_col = has_colors();
+	m_pair_maker = nPfp_ncurses::cPairMaker::singleton();
 
 	addstr("Ncurses started.\n");
 	refresh();
