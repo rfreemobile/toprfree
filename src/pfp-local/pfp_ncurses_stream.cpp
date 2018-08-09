@@ -5,6 +5,7 @@
 
 
 #include "pfp-local/pfp_ncurses_stream.hpp"
+#include "pfp-local/pfp_ncurses_stream_manip.hpp" // to have look at details that we need to implement our apply() of various manips
 
 #include <streambuf>
 #include <ostream>
@@ -14,6 +15,8 @@
 #include <limits>
 
 #include <ncurses.h>
+
+namespace nPfp_ncurses {
 
 
 cNcursesStreamBuf::cNcursesStreamBuf()
@@ -78,8 +81,11 @@ void cNcursesOStream::refresh_on_sync(bool enable) {
 	buf.refresh_on_sync(enable);
 }
 
-void cNcursesOStream::apply(cNcursesManipCol attr) {
-	attron( COLOR_PAIR(attr.m_pair)  ); // <--- ncurses
+void cNcursesOStream::apply(cNcursesManipCol & attr) {
+	attron( attr.get_pair_shifted()  ); // <--- ncurses
 }
 
+
+
+} // namespace
 

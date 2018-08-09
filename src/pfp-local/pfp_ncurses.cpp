@@ -5,6 +5,7 @@
 
 namespace nPfp_ncurses {
 
+/// @namespace: color constants
 namespace nCol {
 
 const short black = COLOR_BLACK;

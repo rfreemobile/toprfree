@@ -12,8 +12,8 @@ namespace nToprfree {
 
 class cUiNcurses_impl {
 	public:
-		cNcursesOStream m_stream;
-		nPfp_ncurses::cPairMaker m_pair_maker;
+		nPfp_ncurses::cNcursesOStream m_stream;
+		nPfp_ncurses::cPairMakerForManip m_pair_maker;
 };
 
 void cUiNcurses_impl_deleter::operator()(cUiNcurses_impl *p) const { delete p; }
@@ -40,7 +40,7 @@ void cUiNcurses::init() {
 
 	m_impl->m_stream.refresh_on_sync(false);
 
-	m_impl->m_pair_maker = nPfp_ncurses::cPairMaker::singleton();
+	m_impl->m_pair_maker = nPfp_ncurses::cPairMakerForManip::singleton();
 
 	addstr("Ncurses started.\n");
 	refresh();

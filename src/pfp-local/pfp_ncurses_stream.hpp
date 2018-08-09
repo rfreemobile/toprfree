@@ -11,6 +11,8 @@
 #include <ostream>
 #include <iostream>
 
+namespace nPfp_ncurses {
+
 class cNcursesStreamBuf : public std::basic_streambuf<char, std::char_traits<char> >
 {
 public:
@@ -69,6 +71,7 @@ private:
 
 };
 
+}
 
 
 #endif

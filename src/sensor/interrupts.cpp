@@ -322,7 +322,11 @@ void cSensorInterrupts::print( shared_ptr<nToprfree::cUiBase> ui ) const {
 	int wid_cpu = wid_sum;
 
 	auto ui_pin = ui; // pin sharedptr
+	// TODO decouple color making - abstract UI ?
+	shared_ptr<nToprfree::cUiBase
 	auto & out = ui_pin->write();
+
+	nPfp_ncurses::cPairMakerForManip make_color = ui
 
 	out << cNcursesManipCol(nCol::red, nCol::green);
 
