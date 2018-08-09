@@ -16,6 +16,9 @@
 #include <iomanip>
 #include <numeric>
 
+#include "pfp_ncurses.hpp" // e.g. for colors etc
+#include "ui/ncurses_stream.hpp" // for manips etc
+
 // ===========================================================================================================
 
 cInterruptOptions::cInterruptOptions()
@@ -301,6 +304,8 @@ void cSensorInterrupts::gather() {
 }
 
 void cSensorInterrupts::print( shared_ptr<nToprfree::cUiBase> ui ) const {
+	using namespace nPfp_ncurses;
+
 	cout << "CPU(s)=" << m_num_cpu << endl;
 	size_t size_inter = m_info.size();
 	size_t size_cpu = this->m_num_cpu;
@@ -318,6 +323,8 @@ void cSensorInterrupts::print( shared_ptr<nToprfree::cUiBase> ui ) const {
 
 	auto ui_pin = ui; // pin sharedptr
 	auto & out = ui_pin->write();
+
+	out << cNcursesManipCol(nCol::red, nCol::green);
 
 	out << std::setw(wid_id) << "Inter" << " :" ;
 	out << std::setw(wid_unit) << "Unit" << " " ;

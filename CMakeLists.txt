@@ -161,7 +161,9 @@ endif()
 
 
 ########################### SOURCE FILES ###########################
-include_directories( src/ )
+include_directories( src/
+	src/pfp-local/
+)
 
 file(GLOB SOURCES_GROUP_MAINPROGRAM src/*
 	src/sensor/*

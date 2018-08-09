@@ -1,4 +1,9 @@
 
+/***
+ * See header file for copyrights and notes.
+*/
+
+
 #include "ui/ncurses_stream.hpp"
 
 #include <streambuf>
@@ -11,8 +16,8 @@
 #include <ncurses.h>
 
 
-/// based on https://stackoverflow.com/questions/772355/how-to-inherit-from-stdostream
 cNcursesStreamBuf::cNcursesStreamBuf()
+: m_refresh_on_sync(true)
 	{
 		setp(buf, buf + BUF_SIZE);
 	}
@@ -37,7 +42,9 @@ int cNcursesStreamBuf::overflow(int c)
 		putChars(pbase(), pptr());
 		// This tells that buffer is empty again
 		setp(buf, buf + BUF_SIZE);
-		refresh(); /// <--- ncurses
+		if (m_refresh_on_sync) {
+			refresh(); /// <--- ncurses
+		}
 		return 0;
 	}
 
@@ -54,10 +61,35 @@ int cNcursesStreamBuf::overflow(int c)
 		addnstr(begin, len); // <--- ncurses write
 	}
 
-/// based on https://stackoverflow.com/questions/772355/how-to-inherit-from-stdostream
+
+void cNcursesStreamBuf::refresh_on_sync(bool enable) {
+	m_refresh_on_sync = enable;
+}
+
+// ===========================================================================================================
+
 	cNcursesOStream::cNcursesOStream() :
 	std::basic_ostream< char, std::char_traits< char > >(&buf),
 	buf()
 	{
 	}
+
+void cNcursesOStream::refresh_on_sync(bool enable) {
+	buf.refresh_on_sync(enable);
+}
+
+void cNcursesOStream::apply(cNcursesManipCol attr) {
+	attron( COLOR_PAIR(attr.m_pair)  ); // <--- ncurses
+}
+
+
+// ===========================================================================================================
+
+std::ostream & operator<<(std::ostream & ostream , cNcursesManipCol attr) {
+	cNcursesOStream & as_ncurses = dynamic_cast<cNcursesOStream &>( ostream );
+	if (! as_ncurses) throw std::runtime_error("cNcursesManipCol attribute was sent to a stream that is not compatible with it.");
+	as_ncurses.apply( attr );
+	return ostream;
+}
+
 

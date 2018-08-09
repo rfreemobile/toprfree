@@ -3,7 +3,7 @@
 
 #include "ui/ncurses_stream.hpp"
 
-#include <ncurses.h>
+#include <ncurses.h> // TODO remove this direct lib, use pfp_ wrapper
 
 namespace nToprfree {
 
@@ -24,13 +24,17 @@ void cUiNcurses::init() {
 	initscr();
 	start_color();
 	// bool has_col = has_colors();
-
-	clear();
+	intrflush(nullptr,false); // do not break logical screen when control-character is used
+	keypad(nullptr,true); // special keys
 
 	noecho();
 	cbreak();
 	timeout(0);
 	curs_set(0); // invisible cursor
+
+	clear();
+
+	m_impl->m_stream.refresh_on_sync(false);
 
 	for (short f=0; f<8; ++f) {
 		for (short b=0; b<8; ++b) {
