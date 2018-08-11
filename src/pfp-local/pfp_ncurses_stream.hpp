@@ -11,12 +11,16 @@
 #include <ostream>
 #include <iostream>
 
+#include "mylib/memory.hpp"
+
+#include "pfp-local/pfp_ncurses.hpp" // cPairMaker
+
 namespace nPfp_ncurses {
 
 class cNcursesStreamBuf : public std::basic_streambuf<char, std::char_traits<char> >
 {
 public:
-	cNcursesStreamBuf();
+	cNcursesStreamBuf(cPairMaker & pairMaker); ///< warning LIFETIME: the caller-provide pairMaker must remain valid in that address as long as (*this) object. Often done by cPairMaker::singleton()
 
 	virtual void refresh_on_sync(bool enable); ///< set whether the sync() e.g. caused by endl, will result in ncurses refresh of screen
 
@@ -32,6 +36,8 @@ protected:
 
 
 	bool m_refresh_on_sync; /// see refresh_on_sync()
+
+	cPairMaker & m_pairMaker; ///< LIFETIME: my creator provides this and it is responsible for keeping it alive (see my ctor)
 
 private:
 	// For EOF detection
@@ -60,7 +66,7 @@ class cNcursesOStream : public std::basic_ostream< char, std::char_traits< char 
 {
 
 public:
-	cNcursesOStream();
+	cNcursesOStream(cPairMaker & pairMaker); ///< warning LIFETIME: the caller-provide pairMaker must remain valid in that address as long as (*this) object. Often done by cPairMaker::singleton()
 
 	virtual void refresh_on_sync(bool enable); ///< set whether the sync() e.g. caused by endl, will result in ncurses refresh of screen
 

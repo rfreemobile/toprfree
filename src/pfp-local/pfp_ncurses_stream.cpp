@@ -19,8 +19,8 @@
 namespace nPfp_ncurses {
 
 
-cNcursesStreamBuf::cNcursesStreamBuf()
-: m_refresh_on_sync(true)
+cNcursesStreamBuf::cNcursesStreamBuf(cPairMaker & pairMaker)
+: m_refresh_on_sync(true) , m_pairMaker( pairMaker )
 	{
 		setp(buf, buf + BUF_SIZE);
 	}
@@ -71,9 +71,9 @@ void cNcursesStreamBuf::refresh_on_sync(bool enable) {
 
 // ===========================================================================================================
 
-	cNcursesOStream::cNcursesOStream() :
+	cNcursesOStream::cNcursesOStream(cPairMaker & pairMaker) :
 	std::basic_ostream< char, std::char_traits< char > >(&buf),
-	buf()
+	buf(pairMaker)
 	{
 	}
 
@@ -82,7 +82,8 @@ void cNcursesOStream::refresh_on_sync(bool enable) {
 }
 
 void cNcursesOStream::apply(cNcursesManipCol & attr) {
-	attron( attr.get_pair_shifted()  ); // <--- ncurses
+	(void)attr;
+	// attron( attr.get_pair_shifted()  ); // <--- ncurses
 }
 
 

@@ -303,6 +303,13 @@ void cSensorInterrupts::gather() {
 	if (line_nr<=1) throw cSensorInterruptsError("No interrupt info could be read.");
 }
 
+// XXX
+template< class CharT, class Traits >
+std::basic_ostream<CharT, Traits>& test_manip( std::basic_ostream<CharT, Traits>& os ) {
+	os<<"[COLOR]";
+	return os;
+}
+
 void cSensorInterrupts::print( shared_ptr<nToprfree::cUiBase> ui ) const {
 	using namespace nPfp_ncurses;
 
@@ -323,14 +330,12 @@ void cSensorInterrupts::print( shared_ptr<nToprfree::cUiBase> ui ) const {
 
 	auto ui_pin = ui; // pin sharedptr
 	// TODO decouple color making - abstract UI ?
-	shared_ptr<nToprfree::cUiBase
+	// shared_ptr<nToprfree::cUiBase // XXX
 	auto & out = ui_pin->write();
+	//	nPfp_ncurses::cPairMakerForManip make_color = ui // XXX
+	//	out << cNcursesManipCol(nCol::red, nCol::green);
 
-	nPfp_ncurses::cPairMakerForManip make_color = ui
-
-	out << cNcursesManipCol(nCol::red, nCol::green);
-
-	out << std::setw(wid_id) << "Inter" << " :" ;
+	out << test_manip << std::setw(wid_id) << "Inter" << " :" ;
 	out << std::setw(wid_unit) << "Unit" << " " ;
 	out << std::setw(wid_sum) << "Sum" << ":" ;
 	for (size_t ix_cpu=0; ix_cpu<size_cpu; ++ix_cpu) out << std::setw(wid_cpu) << ix_cpu << "|";

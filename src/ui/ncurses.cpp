@@ -7,14 +7,16 @@
 #include <ncurses.h> // TODO remove this direct lib, use pfp_ wrapper
 
 #include "pfp-local/pfp_ncurses.hpp"
+#include "pfp-local/pfp_memory.hpp"
 
 namespace nToprfree {
 
 class cUiNcurses_impl {
 	public:
-		nPfp_ncurses::cNcursesOStream m_stream;
-		nPfp_ncurses::cPairMakerForManip m_pair_maker;
+		stdplus::ptr_only_init< nPfp_ncurses::cPairMaker > m_pairMaker; ///< the global/singleton of cPairMaker, initialized in owner cUiNcurses::init()
+		unique_ptr<nPfp_ncurses::cNcursesOStream> m_stream;
 };
+
 
 void cUiNcurses_impl_deleter::operator()(cUiNcurses_impl *p) const { delete p; }
 
@@ -38,9 +40,11 @@ void cUiNcurses::init() {
 
 	clear();
 
-	m_impl->m_stream.refresh_on_sync(false);
+	m_impl->m_pairMaker = & nPfp_ncurses::cPairMaker::singleton(); // taking address of singleton object, this should be OK
+	m_impl->m_stream = make_unique< nPfp_ncurses::cNcursesOStream >( * m_impl->m_pairMaker ); // stream will get refernce to my pairMaker, LIFETIME: it lives in same address as long as (*this)
 
-	m_impl->m_pair_maker = nPfp_ncurses::cPairMakerForManip::singleton();
+	m_impl->m_stream->refresh_on_sync(false);
+
 
 	addstr("Ncurses started.\n");
 	refresh();
@@ -51,7 +55,7 @@ void cUiNcurses::start_frame() {
 }
 
 std::ostream& cUiNcurses::write() {
-	return m_impl->m_stream;
+	return * (m_impl->m_stream);
 }
 
 void cUiNcurses::finish_frame() {
