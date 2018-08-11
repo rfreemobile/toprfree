@@ -41,6 +41,7 @@ void cUiNcurses::init() {
 	clear();
 
 	m_impl->m_pairMaker = & nPfp_ncurses::cPairMaker::singleton(); // taking address of singleton object, this should be OK
+	m_impl->m_pairMaker->init_ncurses_colors();
 	m_impl->m_stream = make_unique< nPfp_ncurses::cNcursesOStream >( * m_impl->m_pairMaker ); // stream will get refernce to my pairMaker, LIFETIME: it lives in same address as long as (*this)
 
 	m_impl->m_stream->refresh_on_sync(false);

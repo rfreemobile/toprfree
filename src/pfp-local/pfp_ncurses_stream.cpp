@@ -69,6 +69,10 @@ void cNcursesStreamBuf::refresh_on_sync(bool enable) {
 	m_refresh_on_sync = enable;
 }
 
+cPairMaker & cNcursesStreamBuf::get_pairMaker() {
+	return m_pairMaker;
+}
+
 // ===========================================================================================================
 
 	cNcursesOStream::cNcursesOStream(cPairMaker & pairMaker) :
@@ -81,11 +85,11 @@ void cNcursesOStream::refresh_on_sync(bool enable) {
 	buf.refresh_on_sync(enable);
 }
 
-void cNcursesOStream::apply(cNcursesManipCol & attr) {
-	(void)attr;
-	// attron( attr.get_pair_shifted()  ); // <--- ncurses
+void cNcursesOStream::set_color(short fg, short bg) {
+	auto color_bits = this->buf.get_pairMaker().colors_to_pair(fg,bg);
+	(*this) << std::flush;
+	attron( COLOR_PAIR( color_bits ) ); // <--- ncurses
 }
-
 
 
 } // namespace

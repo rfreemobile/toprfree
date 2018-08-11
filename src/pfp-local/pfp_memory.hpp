@@ -19,7 +19,7 @@ class ptr_only {
 		}
 
 		typename std::add_lvalue_reference<T>::type operator*() { return *m_p; }
-		typename std::add_lvalue_reference<T>::type operator->() { return *m_p; }
+		T* operator->() { return m_p; }
 
 		bool operator==(const ptr_only<T> & other) const noexcept {
 			return this->m_p == other.m_p;
@@ -52,7 +52,7 @@ class ptr_only_init {
 
 
 		typename std::add_lvalue_reference<T>::type operator*() { return *m_p; }
-		typename std::add_lvalue_reference<T>::type operator->() { return *m_p; }
+		T* operator->() { return m_p; }
 
 		bool operator==(const ptr_only_init<T> & other) const noexcept {
 			return this->m_p == other.m_p;

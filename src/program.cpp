@@ -42,7 +42,7 @@ cProgram::cProgram()
  	m_pimpl->m_boostPO_desc = make_shared<n_po::options_description>("Options",line_length);
 
  	m_pimpl->m_boostPO_desc->add_options()
-	 	("interval", n_po::value<int>()->default_value(2000), "Interval between displaying data, in msec.")
+	 	("interval", n_po::value<int>()->default_value(1000), "Interval between displaying data, in msec.")
 		("mainloops", n_po::value<int>()->default_value(0), "How many iterations of main loop to take. 0 = run forever")
 		("showifsum", n_po::value<long int>()->default_value(1), "Show only interrupts with this or more events Sum.")
  	;

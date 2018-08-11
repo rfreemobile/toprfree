@@ -24,6 +24,8 @@ public:
 
 	virtual void refresh_on_sync(bool enable); ///< set whether the sync() e.g. caused by endl, will result in ncurses refresh of screen
 
+	cPairMaker & get_pairMaker();
+
 protected:
 	// This is called when buffer becomes full. If
 	// buffer is not used, then this is called every
@@ -70,7 +72,7 @@ public:
 
 	virtual void refresh_on_sync(bool enable); ///< set whether the sync() e.g. caused by endl, will result in ncurses refresh of screen
 
-	virtual void apply(cNcursesManipCol & attr);
+	virtual void set_color(short fg, short bg);
 
 private:
 	cNcursesStreamBuf buf;
