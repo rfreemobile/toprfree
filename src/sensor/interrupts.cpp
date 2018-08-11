@@ -324,18 +324,19 @@ void cSensorInterrupts::print( shared_ptr<nToprfree::cUiBase> ui ) const {
 	auto ui_pin = ui; // pin sharedptr
 	auto & out = ui_pin->write();
 
-	out << setcolor(nCol::cyan, nCol::black) ;
-	out << std::setw(wid_id) << "Inter" << " :" ;
-	out << setcolor(nCol::yellow, nCol::black) ;
-	out << std::setw(wid_unit) << "Unit" << " " ;
-	out << setcolor(nCol::green, nCol::black) ;
+	out << resetcol();
+
+	out << setbg(nCol::blue) ;
+
+	out << setfg(nCol::magenta) << std::setw(wid_id) << "Inter" << resetfg() << " :" ;
+	out << std::setw(wid_unit) << "Unit" << "|" ;
 	out << std::setw(wid_sum) << "Sum" << ":" ;
 	for (size_t ix_cpu=0; ix_cpu<size_cpu; ++ix_cpu) out << std::setw(wid_cpu) << ix_cpu << "|";
 	out << "Device";
-	out << endl;
+	out << resetcol() << endl;
 
 	out << string(wid_id,'-') << " :" ;
-	out << string(wid_unit,'-') << " " ;
+	out << string(wid_unit,'-') << "|" ;
 	out << string(wid_sum,'-') << ":" ;
 	for (size_t ix_cpu=0; ix_cpu<size_cpu; ++ix_cpu) out << string(wid_cpu,'-') << "|";
 	out << string(5,'-');
@@ -345,6 +346,8 @@ void cSensorInterrupts::print( shared_ptr<nToprfree::cUiBase> ui ) const {
 
 	out << setcolor(nCol::white, nCol::black) ;
 	for (size_t ix_inter=0; ix_inter<size_inter; ++ix_inter) {
+		out << resetcol();
+
 		const auto & diff = m_diff_sec.at(ix_inter);
 		const auto & info = m_info.at(ix_inter);
 
@@ -354,6 +357,7 @@ void cSensorInterrupts::print( shared_ptr<nToprfree::cUiBase> ui ) const {
 			++count_hidden;
 			continue;
 		}
+		if (ix_inter%2) out << setbg(nCol::cyan);
 
 		out << std::setw(wid_id) << info.m_id << " ";
 		out << ":";

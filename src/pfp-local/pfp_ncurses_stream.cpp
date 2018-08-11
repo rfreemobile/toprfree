@@ -78,6 +78,8 @@ cPairMaker & cNcursesStreamBuf::get_pairMaker() {
 	cNcursesOStream::cNcursesOStream(cPairMaker & pairMaker) :
 	std::basic_ostream< char, std::char_traits< char > >(&buf),
 	buf(pairMaker)
+	,m_fg(-1), m_bg(-1)
+	,m_fg_normal(nCol::white), m_bg_normal(nCol::black)
 	{
 	}
 
@@ -85,10 +87,30 @@ void cNcursesOStream::refresh_on_sync(bool enable) {
 	buf.refresh_on_sync(enable);
 }
 
+void cNcursesOStream::define_color_normal(short fg, short bg) {
+	m_fg_normal = fg;
+	m_bg_normal = bg;
+}
+
 void cNcursesOStream::set_color(short fg, short bg) {
-	auto color_bits = this->buf.get_pairMaker().colors_to_pair(fg,bg);
-	(*this) << std::flush;
-	attron( COLOR_PAIR( color_bits ) ); // <--- ncurses
+	bool changed{false};
+	if (fg == -1) fg = m_fg; // will tell ncurses to use the same fg color that I have saved
+	if (bg == -1) bg = m_bg; // will tell ncurses to use the same bg color that I have saved
+
+	// in same way, interpret -2 as reset to normal color:
+	if (fg == -2) fg = m_fg_normal;
+	if (bg == -2) bg = m_bg_normal;
+
+	if (fg != m_fg) changed=true;
+	if (bg != m_bg) changed=true;
+
+	if (changed) {
+		auto color_bits = this->buf.get_pairMaker().colors_to_pair(fg,bg);
+		(*this) << std::flush; // all that was buffered with previous attributes/colors, will be printed now
+		attron( COLOR_PAIR( color_bits ) ); // <--- ncurses - set color, future buffer flushes will use this one
+		m_fg = fg;
+		m_bg = bg;
+	}
 }
 
 

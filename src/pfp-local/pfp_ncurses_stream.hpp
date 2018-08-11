@@ -72,10 +72,17 @@ public:
 
 	virtual void refresh_on_sync(bool enable); ///< set whether the sync() e.g. caused by endl, will result in ncurses refresh of screen
 
-	virtual void set_color(short fg, short bg);
+	virtual void set_color(short fg, short bg); ///< will use this color for future characters. fg or bg value -1 is "no change", value -2 is "back to normal"
+	virtual void define_color_normal(short fg, short bg); ///< define what are values of normal colors here
 
 private:
 	cNcursesStreamBuf buf;
+
+	short m_fg; ///< the fg color that I so far told ncruses to use
+	short m_bg; ///< the bg color that I so far told ncruses to use
+
+	short m_fg_normal;
+	short m_bg_normal;
 
 };
 

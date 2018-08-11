@@ -12,9 +12,28 @@ namespace nPfp_ncurses {
 
 struct setcolor {
 	explicit constexpr setcolor(short fg, short bg) : m_fg(fg), m_bg(bg) { }
-
 	short m_fg, m_bg;
 };
+
+struct resetcol : setcolor {
+	explicit constexpr resetcol() : setcolor(-2,-2) { }
+};
+
+struct setfg : setcolor {
+	explicit constexpr setfg(short fg) : setcolor(fg,-1) { }
+};
+
+struct setbg : setcolor {
+	explicit constexpr setbg(short bg) : setcolor(-1,bg) { }
+};
+
+struct resetfg : setfg {
+	explicit constexpr resetfg() : setfg(-2) { }
+};
+struct resetbg : setbg {
+	explicit constexpr resetbg() : setbg(-2) { }
+};
+
 
 template <typename CharT, typename Traits>
 std::basic_ostream<CharT,Traits> & operator<<( std::basic_ostream<CharT,Traits> & os, const setcolor & col) {

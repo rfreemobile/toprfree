@@ -17,7 +17,7 @@ extern const short white;
 } // namespace nCol
 
 
-class cPairMaker {
+class cPairMaker final {
 	public:
 		cPairMaker()=default;
 
@@ -25,6 +25,9 @@ class cPairMaker {
 
 		void init_ncurses_colors(); ///< call this ONLY when ncurses, screeens, start_color() is all initialized already. Can be called more then 1 but just waste of performance (re-inits colors)
 		short colors_to_pair(int fg, int bg) const; ///< this works provided that init_ncurses_colors() was called previously. UB otherwise
+
+		int max_color_fg() const noexcept; ///< max number of color to be used as fg
+		int max_color_bg() const noexcept; ///< max number of color to be used as bg
 };
 
 
