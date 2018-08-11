@@ -12,6 +12,7 @@ int main(const int argc, const char * const * argv) {
 	try {
 		cProgram program;
 		program.options(argc,argv);
+		program.early_startup();
 		program.run();
 	}
 	catch(const std::runtime_error & ex) {

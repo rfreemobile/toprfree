@@ -20,6 +20,7 @@ if(WIN32 OR CYGWIN)
 	add_definitions(-DNOMINMAX)
 endif()
 
+
 ########################### BOOST ###########################
 ### boost - part 1 - just check version and decide does it affect our flags
 set (Boost_USE_MULTITHREADED ON)
@@ -160,11 +161,15 @@ endif()
 
 
 ########################### SOURCE FILES ###########################
-include_directories( src/ )
+include_directories( src/
+	src/pfp-local/
+)
 
 file(GLOB SOURCES_GROUP_MAINPROGRAM src/*
 	src/sensor/*
 	src/mylib/*
+	src/ui/*
+	src/pfp-local/*
 )
 # ^-- TODO perhaps separate mylib a bit?
 
@@ -197,6 +202,7 @@ set(LIBS_COMMON
 	${PTHREAD_LIB}
 	${LIB_OPTIONAL_CAPNG}
 	${MINGW_LIBRARIES} ${MSVC_LIRARIES}
+	ncurses
 )
 
 target_link_libraries(toprfree

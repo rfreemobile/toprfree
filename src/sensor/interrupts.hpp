@@ -20,7 +20,7 @@ class cSensorInterrupts : cSensor {
 
 		virtual void gather();
 		virtual void calc_stats();
-		virtual void print() const;
+		virtual void print( shared_ptr<nToprfree::cUiBase> ui ) const;
 		virtual void step();
 
 		cInterruptOptions m_options;
